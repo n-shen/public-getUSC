@@ -6,6 +6,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#define BUFFSIZE 100
+
 void initClient(int *sd)
 {
     int portNumber = 25448;
@@ -28,69 +30,41 @@ void initClient(int *sd)
     printf("The client is up and running.\n");
 }
 
-void sendUserName(int *sd)
+void sendUserAuth(int *sd, int type)
 {
     int rc = 0;
-    int sizeOfUserName;
-    int converted_sizeOfUserName;
-    char userName[100];
+    int sizeOfUserAuth;
+    int converted_sizeOfUserAuth;
+    char userAuth[BUFFSIZE];
 
     /* ask user for message input */
-    printf("Please enter the username: ");
+    (type) ? (printf("Please enter the password: ")) : (printf("Please enter the username: "));
     fflush(stdout);
-    fgets(userName, sizeof(userName), stdin);
-    userName[strcspn(userName, "\n")] = 0;
+    fgets(userAuth, sizeof(userAuth), stdin);
+    userAuth[strcspn(userAuth, "\n")] = 0;
 
     /* send size of input(string) to the server */
-    sizeOfUserName = strlen(userName);
-    converted_sizeOfUserName = ntohs(sizeOfUserName);
-    rc = write(*sd, &converted_sizeOfUserName, sizeof(converted_sizeOfUserName));
+    sizeOfUserAuth = strlen(userAuth);
+    converted_sizeOfUserAuth = ntohs(strlen(userAuth));
+    rc = write(*sd, &converted_sizeOfUserAuth, sizeof(converted_sizeOfUserAuth));
     if (rc < 0)
-        perror("write-1");
+        perror("send failed - 1");
 
     /* send message(string) to the server */
-    rc = write(*sd, userName, sizeOfUserName);
-    printf("Client: String sent(\"%s\")!\n", userName);
+    rc = write(*sd, userAuth, sizeOfUserAuth);
     if (rc < 0)
-        perror("write-2");
-}
-
-void sendUserPsw(int *sd)
-{
-    int rc = 0;
-    int sizeOfUserPsw;
-    int converted_sizeOfUserPsw;
-    char userPsw[100];
-
-    /* ask user for message input */
-    printf("Please enter the password: ");
-    fflush(stdout);
-    fgets(userPsw, sizeof(userPsw), stdin);
-    userPsw[strcspn(userPsw, "\n")] = 0;
-
-    /* send size of input(string) to the server */
-    sizeOfUserPsw = strlen(userPsw);
-    converted_sizeOfUserPsw = ntohs(sizeOfUserPsw);
-    rc = write(*sd, &converted_sizeOfUserPsw, sizeof(converted_sizeOfUserPsw));
-    if (rc < 0)
-        perror("write-1");
-
-    /* send message(string) to the server */
-    rc = write(*sd, userPsw, sizeOfUserPsw);
-    printf("Client: String sent(\"%s\")!\n", userPsw);
-    if (rc < 0)
-        perror("write-2");
+        perror("send failed - 2");
 }
 
 void commuServerM(int *sd)
 {
 
-    /* Loop1: send message to server repeatly */
-LOOP1:
-    sendUserName(sd);
-    sendUserPsw(sd);
+    /* CP_SESSION: send message to server repeatly */
+CP_SESSION:
+    sendUserAuth(sd, 0); // 0: username;
+    sendUserAuth(sd, 1); // 1: password;
 
-    goto LOOP1;
+    goto CP_SESSION;
 }
 
 int main(int argc, char *argv[])

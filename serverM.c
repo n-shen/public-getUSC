@@ -46,7 +46,7 @@ void recvUserAuth(int *sd, int *connected_sd, char *userAuth)
     rc = read(*connected_sd, &sizeOfUserAuth, sizeof(int));
     if (rc <= 0)
     {
-        printf("\n/*-------- Client Status: Clinet disconneted! Waiting new clients... -----------*/\n");
+        printf("\n/*-------- Clinet disconneted! Waiting new clients... -----------*/\n");
         commuClient(sd);
     }
 
