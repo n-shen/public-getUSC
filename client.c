@@ -7,17 +7,18 @@
 #include <unistd.h>
 
 #define BUFFSIZE 100
+#define PORT_NUM_TCP_SERVERM 25448
 
 void initClient(int *sd)
 {
-    int portNumber = 25448;
+    int portNumber = 8889; // DYNAMIC
     char serverIP[29] = "127.0.0.1";
     struct sockaddr_in server_address;
 
     /* create a socket */
     *sd = socket(AF_INET, SOCK_STREAM, 0);
     server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(portNumber);
+    server_address.sin_port = htons(PORT_NUM_TCP_SERVERM);
     server_address.sin_addr.s_addr = inet_addr(serverIP);
 
     /* connect to serverM */

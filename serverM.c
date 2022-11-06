@@ -6,12 +6,12 @@
 #include <stdlib.h>
 
 #define BUFFSIZE 100
+#define PORT_NUM_TCP 25448
 
 void commuClient(int *sd);
 
 void initServerM(int *sd)
 {
-    int portNumber = 25448;
     struct sockaddr_in server_address;
     int rc; /* return code from recvfrom */
 
@@ -19,7 +19,7 @@ void initServerM(int *sd)
     *sd = socket(AF_INET, SOCK_STREAM, 0);
 
     server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(portNumber);
+    server_address.sin_port = htons(PORT_NUM_TCP);
     server_address.sin_addr.s_addr = INADDR_ANY;
 
     /* bind socket and ip */
@@ -69,6 +69,7 @@ void commuClient(int *sd)
     int rc;           /* return code from recvfrom */
     struct sockaddr_in from_address;
     socklen_t fromLength;
+
     char userName[BUFFSIZE];
     char userPsw[BUFFSIZE];
 
@@ -83,6 +84,7 @@ CP_SESSION:
     recvUserAuth(sd, &connected_sd, userName);
     recvUserAuth(sd, &connected_sd, userPsw);
     printf("Received Auth: [%s,%s]\n", userName, userPsw);
+    printf("The main server received the authentication for %s using TCP over port %d.\n", userName, PORT_NUM_TCP);
 
     goto CP_SESSION;
 }
