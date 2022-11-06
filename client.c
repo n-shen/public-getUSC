@@ -28,27 +28,18 @@ void initClient(int *sd)
     printf("The client is up and running.\n");
 }
 
-void commuServerM(int *sd)
+void sendUserName(int *sd)
 {
     int rc = 0;
     int sizeOfUserName;
     int converted_sizeOfUserName;
     char userName[100];
 
-    /* Loop1: send message to server repeatly */
-LOOP1:
     /* ask user for message input */
     printf("Please enter the username: ");
     fflush(stdout);
     fgets(userName, sizeof(userName), stdin);
     userName[strcspn(userName, "\n")] = 0;
-
-    /* if input == 'STOP', close client */
-    if (strcmp(userName, "STOP") == 0)
-    {
-        printf("Client Closed!\n");
-        exit(2);
-    }
 
     /* send size of input(string) to the server */
     sizeOfUserName = strlen(userName);
@@ -62,6 +53,42 @@ LOOP1:
     printf("Client: String sent(\"%s\")!\n", userName);
     if (rc < 0)
         perror("write-2");
+}
+
+void sendUserPsw(int *sd)
+{
+    int rc = 0;
+    int sizeOfUserPsw;
+    int converted_sizeOfUserPsw;
+    char userPsw[100];
+
+    /* ask user for message input */
+    printf("Please enter the password: ");
+    fflush(stdout);
+    fgets(userPsw, sizeof(userPsw), stdin);
+    userPsw[strcspn(userPsw, "\n")] = 0;
+
+    /* send size of input(string) to the server */
+    sizeOfUserPsw = strlen(userPsw);
+    converted_sizeOfUserPsw = ntohs(sizeOfUserPsw);
+    rc = write(*sd, &converted_sizeOfUserPsw, sizeof(converted_sizeOfUserPsw));
+    if (rc < 0)
+        perror("write-1");
+
+    /* send message(string) to the server */
+    rc = write(*sd, userPsw, sizeOfUserPsw);
+    printf("Client: String sent(\"%s\")!\n", userPsw);
+    if (rc < 0)
+        perror("write-2");
+}
+
+void commuServerM(int *sd)
+{
+
+    /* Loop1: send message to server repeatly */
+LOOP1:
+    sendUserName(sd);
+    sendUserPsw(sd);
 
     goto LOOP1;
 }

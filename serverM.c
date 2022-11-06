@@ -33,69 +33,34 @@ void initServerM(int *sd)
     printf("The main server is up and running.\n");
 }
 
-void recvUserName(int *sd, int *connected_sd)
+/* Server - Receive client's Auth input */
+void recvUserAuth(int *sd, int *connected_sd, char *userAuth)
 {
-
-    /* Server - Read file name and filename size*/
     int rc;
-    int sizeOfUserName;
+    int sizeOfUserAuth;
     char buffer[BUFFSIZE];
     memset(buffer, 0, BUFFSIZE);
     char *ptr = buffer;
 
     /* read size */
-    rc = read(*connected_sd, &sizeOfUserName, sizeof(int));
+    rc = read(*connected_sd, &sizeOfUserAuth, sizeof(int));
     if (rc <= 0)
     {
-        printf("\n\n/*-------- Client Status: Clinet disconneted! Waiting new clients... -----------*/\n");
+        printf("\n/*-------- Client Status: Clinet disconneted! Waiting new clients... -----------*/\n");
         commuClient(sd);
     }
 
-    sizeOfUserName = ntohs(sizeOfUserName);
-    /* read userName */
-    rc = read(*connected_sd, ptr, sizeOfUserName);
+    /* read userAuth */
+    sizeOfUserAuth = ntohs(sizeOfUserAuth);
+    rc = read(*connected_sd, ptr, sizeOfUserAuth);
     if (rc <= 0)
     {
         perror("reveive error");
         exit(-1);
     }
 
-    /* Server - Print result */
-    char userName[BUFFSIZE];
-    strncpy(userName, buffer, 100);
-    printf("[SERVER Notice] Received username: \"%s\"\n", userName);
-}
-
-/* ServerM: read userPsw from client */
-void recvUserPsw(int *sd, int *connected_sd)
-{
-    int rc;
-    int sizeOfUserPsw;
-    char buffer[BUFFSIZE];
-    memset(buffer, 0, BUFFSIZE);
-    char *ptr = buffer;
-
-    /* read size */
-    rc = read(*connected_sd, &sizeOfUserPsw, sizeof(int));
-    if (rc <= 0)
-    {
-        printf("\n\n/*-------- Client Status: Clinet disconneted! Waiting new clients... -----------*/\n");
-        commuClient(sd);
-    }
-
-    sizeOfUserPsw = ntohs(sizeOfUserPsw);
-    /* read userName */
-    rc = read(*connected_sd, ptr, sizeOfUserPsw);
-    if (rc <= 0)
-    {
-        perror("reveive error");
-        exit(-1);
-    }
-
-    /* Server - Print result */
-    char userPsw[BUFFSIZE];
-    strncpy(userPsw, buffer, BUFFSIZE);
-    printf("[SERVER Notice] Received password: \"%s\"\n", userPsw);
+    /* Server - return result */
+    strncpy(userAuth, buffer, BUFFSIZE);
 }
 
 void commuClient(int *sd)
@@ -104,15 +69,20 @@ void commuClient(int *sd)
     int rc;           /* return code from recvfrom */
     struct sockaddr_in from_address;
     socklen_t fromLength;
+    char userName[BUFFSIZE];
+    char userPsw[BUFFSIZE];
 
     /* LOOP1 - listen to incoming client, limit: one student */
     listen(*sd, 1);
     connected_sd = accept(*sd, (struct sockaddr *)&from_address, &fromLength);
     printf("[SERVER Notice] Clinet conneted! Listening...\n");
+
 /* LOOP2 - receive message from connected clients */
 CP_SESSION:
-    recvUserName(sd, &connected_sd);
-    recvUserPsw(sd, &connected_sd);
+
+    recvUserAuth(sd, &connected_sd, userName);
+    recvUserAuth(sd, &connected_sd, userPsw);
+    printf("Received Auth: [%s,%s]\n", userName, userPsw);
 
     goto CP_SESSION;
 }
