@@ -7,83 +7,122 @@
 
 #define BUFFSIZE 100
 
-int main(int argc, char *argv[])
-{
-    int sd;           /* socket descriptor */
-    int connected_sd; /* socket descriptor */
-    int rc;           /* return code from recvfrom */
-    struct sockaddr_in server_address;
-    struct sockaddr_in from_address;
-    socklen_t fromLength;
-    int portNumber;
-    int formLength;
+void commuClient(int *sd);
 
-    /* usage reminder */
-    if (argc < 2)
-    {
-        printf("Usage is: server <portNumber>\n");
-        exit(1);
-    }
+void initServerM(int *sd)
+{
+    int portNumber = 25448;
+    struct sockaddr_in server_address;
+    int rc; /* return code from recvfrom */
 
     /* create a socket */
-    portNumber = atoi(argv[1]);
-    sd = socket(AF_INET, SOCK_STREAM, 0);
+    *sd = socket(AF_INET, SOCK_STREAM, 0);
 
-    formLength = sizeof(struct sockaddr_in);
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(portNumber);
     server_address.sin_addr.s_addr = INADDR_ANY;
 
     /* bind socket and ip */
-    rc = bind(sd, (struct sockaddr *)&server_address, sizeof(server_address));
+    rc = bind(*sd, (struct sockaddr *)&server_address, sizeof(server_address));
     if (rc < 0)
     {
-        perror("bind");
-        exit(1);
-    }
-    else
-    {
-        printf("/*-------- Server Status: Established! -----------*/\n");
+        perror("serverM Warning: bind error");
+        exit(-1);
     }
 
-/* LOOP1 - listen to incoming clients */
-LOOP1:
-    listen(sd, 5);
-    connected_sd = accept(sd, (struct sockaddr *)&from_address, &fromLength);
+    printf("The main server is up and running.\n");
+}
 
-/* LOOP2 - receive message from connected clients */
-LOOP2:
-    printf("\n[SERVER Notice] Clinet conneted! Listening...\n");
+void recvUserName(int *sd, int *connected_sd)
+{
 
     /* Server - Read file name and filename size*/
-    int sizeOfFilename;
-    char buffer[100];
-    memset(buffer, 0, 100);
+    int rc;
+    int sizeOfUserName;
+    char buffer[BUFFSIZE];
+    memset(buffer, 0, BUFFSIZE);
     char *ptr = buffer;
 
     /* read size */
-    rc = read(connected_sd, &sizeOfFilename, sizeof(int));
+    rc = read(*connected_sd, &sizeOfUserName, sizeof(int));
     if (rc <= 0)
     {
         printf("\n\n/*-------- Client Status: Clinet disconneted! Waiting new clients... -----------*/\n");
-        goto LOOP1;
+        commuClient(sd);
     }
 
-    sizeOfFilename = ntohs(sizeOfFilename);
-    /* read message */
-    rc = read(connected_sd, ptr, sizeOfFilename);
+    sizeOfUserName = ntohs(sizeOfUserName);
+    /* read userName */
+    rc = read(*connected_sd, ptr, sizeOfUserName);
     if (rc <= 0)
     {
         perror("reveive error");
-        exit(1);
+        exit(-1);
     }
 
     /* Server - Print result */
-    char originName[100];
-    strncpy(originName, buffer, 100);
-    printf("[SERVER Notice] Received string: \"%s\"\n", originName);
+    char userName[BUFFSIZE];
+    strncpy(userName, buffer, 100);
+    printf("[SERVER Notice] Received username: \"%s\"\n", userName);
+}
 
-    goto LOOP2;
+/* ServerM: read userPsw from client */
+void recvUserPsw(int *sd, int *connected_sd)
+{
+    int rc;
+    int sizeOfUserPsw;
+    char buffer[BUFFSIZE];
+    memset(buffer, 0, BUFFSIZE);
+    char *ptr = buffer;
+
+    /* read size */
+    rc = read(*connected_sd, &sizeOfUserPsw, sizeof(int));
+    if (rc <= 0)
+    {
+        printf("\n\n/*-------- Client Status: Clinet disconneted! Waiting new clients... -----------*/\n");
+        commuClient(sd);
+    }
+
+    sizeOfUserPsw = ntohs(sizeOfUserPsw);
+    /* read userName */
+    rc = read(*connected_sd, ptr, sizeOfUserPsw);
+    if (rc <= 0)
+    {
+        perror("reveive error");
+        exit(-1);
+    }
+
+    /* Server - Print result */
+    char userPsw[BUFFSIZE];
+    strncpy(userPsw, buffer, BUFFSIZE);
+    printf("[SERVER Notice] Received password: \"%s\"\n", userPsw);
+}
+
+void commuClient(int *sd)
+{
+    int connected_sd; /* socket descriptor */
+    int rc;           /* return code from recvfrom */
+    struct sockaddr_in from_address;
+    socklen_t fromLength;
+
+    /* LOOP1 - listen to incoming client, limit: one student */
+    listen(*sd, 1);
+    connected_sd = accept(*sd, (struct sockaddr *)&from_address, &fromLength);
+    printf("[SERVER Notice] Clinet conneted! Listening...\n");
+/* LOOP2 - receive message from connected clients */
+CP_SESSION:
+    recvUserName(sd, &connected_sd);
+    recvUserPsw(sd, &connected_sd);
+
+    goto CP_SESSION;
+}
+
+int main(int argc, char *argv[])
+{
+    int sd; /* socket descriptor */
+
+    initServerM(&sd);
+    commuClient(&sd);
 
     return 0;
 }

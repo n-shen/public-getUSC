@@ -6,7 +6,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-void initConn(int *sd)
+void initClient(int *sd)
 {
     int portNumber = 25448;
     char serverIP[29] = "127.0.0.1";
@@ -28,7 +28,7 @@ void initConn(int *sd)
     printf("The client is up and running.\n");
 }
 
-void commuServer(int *sd)
+void commuServerM(int *sd)
 {
     int rc = 0;
     int sizeOfUserName;
@@ -70,8 +70,8 @@ int main(int argc, char *argv[])
 {
     int sd;
 
-    initConn(&sd);
-    commuServer(&sd);
+    initClient(&sd);
+    commuServerM(&sd);
 
     return 0;
 }
