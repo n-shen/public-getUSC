@@ -67,7 +67,6 @@ void connServerM(int *sd)
 
 void sendUserAuth(int *sd, int type)
 {
-    int rc = 0;
     int sizeOfUserAuth;
     int converted_sizeOfUserAuth;
     char userAuth[BUFFSIZE];
@@ -89,13 +88,24 @@ void sendUserAuth(int *sd, int type)
         perror("Content send failed");
 }
 
+int recvUserAuthFeedback(int sd)
+{
+    int authFeedback = -1;
+    if (read(sd, &authFeedback, sizeof(int)) <= 0)
+        perror("Auth Feedback received failed");
+
+    return ntohs(authFeedback);
+}
+
 void commuServerM(int *sd)
 {
-
+    int authFeedback = -1;
     /* CP_SESSION: send message to server repeatly */
 CP_SESSION:
     sendUserAuth(sd, 0); // 0: username;
     sendUserAuth(sd, 1); // 1: password;
+    authFeedback = recvUserAuthFeedback(*sd);
+    printf("Auth fb: %d.\n", authFeedback);
 
     goto CP_SESSION;
 }

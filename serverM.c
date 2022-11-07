@@ -60,8 +60,14 @@ void recvUserAuth(int *sd, int *connected_sd, char *userAuth)
     strncpy(userAuth, buffer, BUFFSIZE);
 }
 
-void sendUserAuthFeedback()
+void sendUserAuthFeedback(int client_sd)
 {
+    int authFeedbackType;
+
+    /* Send the size of input(string) to the server */
+    authFeedbackType = ntohs(101);
+    if (write(client_sd, &authFeedbackType, sizeof(int)) < 0)
+        perror("User Auth Feedback sent failed");
 }
 
 void commuClient(int *sd)
@@ -83,6 +89,8 @@ CP_SESSION:
     recvUserAuth(sd, &connected_sd, userPsw);
     printf("Received Auth: [%s,%s]\n", userName, userPsw);
     printf("The main server received the authentication for %s using TCP over port %d.\n", userName, PORT_NUM_TCP);
+
+    sendUserAuthFeedback(connected_sd);
 
     goto CP_SESSION;
 }
