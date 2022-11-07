@@ -6,12 +6,32 @@
 #include <stdlib.h>
 
 #define BUFFSIZE 51
-#define PORT_NUM_TCP 25448
+#define PORT_NUM_SERVERM_TCP 25448
+#define PORT_NUM_SERVERM_UDP 24448
 #define IP_SERVERM "127.0.0.1"
 
 void commuClient(int *sd);
 
-void initServerM(int *sd)
+void initServerMUDP(int *sd_udp, struct sockaddr_in *serverM_UDP_address)
+{
+
+    /* Create serverM socket. */
+    *sd_udp = socket(AF_INET, SOCK_DGRAM, 0);
+
+    serverM_UDP_address->sin_family = AF_INET;
+    serverM_UDP_address->sin_port = htons(PORT_NUM_SERVERM_UDP);
+    serverM_UDP_address->sin_addr.s_addr = INADDR_ANY;
+
+    /* Bind ServerC socket and IP. */
+    // check return code from bind
+    if (bind(*sd_udp, (struct sockaddr *)serverM_UDP_address, sizeof(*serverM_UDP_address)) < 0)
+    {
+        perror("serverM Warning: UDP bind error");
+        exit(-1);
+    }
+}
+
+void initServerMTCP(int *sd)
 {
     struct sockaddr_in serverM_address;
 
@@ -88,13 +108,19 @@ void encryptAuth(char *userAuth[BUFFSIZE])
     strcpy(*userAuth, tmp);
 }
 
-void verifyAuth(int connected_sd, char userName[BUFFSIZE], char userPsw[BUFFSIZE])
+void sendUserVerReq(char userName[BUFFSIZE], char userPsw[BUFFSIZE], int *sd_udp, struct sockaddr_in *serverM_UDP_address)
+{
+    printf("sending to ServerC.\n");
+    int rc = sendto(*sd_udp, &userName, strlen(userName), 0, (struct sockaddr *)serverM_UDP_address, sizeof(*serverM_UDP_address));
+    printf("sending to ServerC %d.\n", rc);
+}
+void verifyAuth(int connected_sd, char userName[BUFFSIZE], char userPsw[BUFFSIZE], int *sd_udp, struct sockaddr_in *serverM_UDP_address)
 {
     /* encrypt auth */
     encryptAuth(&userName);
     encryptAuth(&userPsw);
     printf("encrypted: %s, %s.\n", userName, userPsw);
-
+    sendUserVerReq(userName, userPsw, sd_udp, serverM_UDP_address);
     /* send feedback */
     sendUserAuthFeedback(connected_sd);
 }
