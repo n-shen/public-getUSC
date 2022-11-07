@@ -70,6 +70,7 @@ void sendUserAuthFeedback(int connected_sd)
         perror("User Auth Feedback sent failed");
 }
 
+/* encrypt auth */
 void encryptAuth(char *userAuth[BUFFSIZE])
 {
     char tmp[BUFFSIZE];
@@ -77,9 +78,14 @@ void encryptAuth(char *userAuth[BUFFSIZE])
     int i;
     for (i = 0; i < strlen(tmp); i++)
     {
-        tmp[i] = '$';
+        if (tmp[i] >= 'A' && tmp[i] <= 'Z')
+            tmp[i] = 65 + (tmp[i] - 61) % 26;
+        else if (tmp[i] >= 'a' && tmp[i] <= 'z')
+            tmp[i] = 97 + (tmp[i] - 93) % 26;
+        else if (tmp[i] >= '0' && tmp[i] <= '9')
+            tmp[i] = 48 + (tmp[i] - 44) % 10;
     }
-    printf("tmp: %s\n", tmp);
+    strcpy(*userAuth, tmp);
 }
 
 void verifyAuth(int connected_sd, char userName[BUFFSIZE], char userPsw[BUFFSIZE])
@@ -87,7 +93,7 @@ void verifyAuth(int connected_sd, char userName[BUFFSIZE], char userPsw[BUFFSIZE
     /* encrypt auth */
     encryptAuth(&userName);
     encryptAuth(&userPsw);
-    printf("encrypted: %s, %s.", userName, userPsw);
+    printf("encrypted: %s, %s.\n", userName, userPsw);
 
     /* send feedback */
     sendUserAuthFeedback(connected_sd);
