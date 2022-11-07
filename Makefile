@@ -1,14 +1,17 @@
 # Author: Niholas Shen https://shen.dev
 # University of Southern California. EE450 Nov.28.2022
 
-all: client serverM
+all: client serverM serverC
 
 client:
 	gcc client.c -o client
 
-server:
+serverM:
 	gcc serverM.c -o serverM
 
+serverC:
+	gcc serverC.c -o serverC
+
 clean:
-	rm -rf client serverM
+	rm -rf client serverM serverC
 	

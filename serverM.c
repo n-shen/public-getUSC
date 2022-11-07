@@ -23,7 +23,7 @@ void initServerM(int *sd)
     serverM_address.sin_addr.s_addr = INADDR_ANY;
 
     /* Bind ServerM socket and IP. */
-    // check return code from recvfrom
+    // check return code from bind
     if (bind(*sd, (struct sockaddr *)&serverM_address, sizeof(serverM_address)) < 0)
     {
         perror("serverM Warning: bind error");
