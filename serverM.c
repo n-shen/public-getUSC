@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#define BUFFSIZE 100
+#define BUFFSIZE 51
 #define PORT_NUM_TCP 25448
 #define IP_SERVERM "127.0.0.1"
 
@@ -13,18 +13,18 @@ void commuClient(int *sd);
 
 void initServerM(int *sd)
 {
-    struct sockaddr_in server_address;
+    struct sockaddr_in serverM_address;
 
     /* Create serverM socket. */
     *sd = socket(AF_INET, SOCK_STREAM, 0);
 
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(PORT_NUM_TCP);
-    server_address.sin_addr.s_addr = INADDR_ANY;
+    serverM_address.sin_family = AF_INET;
+    serverM_address.sin_port = htons(PORT_NUM_TCP);
+    serverM_address.sin_addr.s_addr = INADDR_ANY;
 
     /* Bind ServerM socket and IP. */
     // check return code from recvfrom
-    if (bind(*sd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0)
+    if (bind(*sd, (struct sockaddr *)&serverM_address, sizeof(serverM_address)) < 0)
     {
         perror("serverM Warning: bind error");
         exit(-1);
@@ -52,27 +52,29 @@ void recvUserAuth(int *sd, int *connected_sd, char *userAuth)
     sizeOfUserAuth = ntohs(sizeOfUserAuth);
     if (read(*connected_sd, ptr, sizeOfUserAuth) < 0)
     {
-        perror("[ERROR] Reveiving");
-        exit(-1);
+        printf("\n/*-------- Clinet disconneted! Waiting new clients... -----------*/\n");
+        commuClient(sd);
     }
 
     /* Server - return result */
     strncpy(userAuth, buffer, BUFFSIZE);
 }
 
+void sendUserAuthFeedback()
+{
+}
+
 void commuClient(int *sd)
 {
-    int connected_sd; /* socket descriptor */
-    struct sockaddr_in from_address;
-    socklen_t fromLength;
+    int connected_sd, connected_client_port;
+    struct sockaddr_in client_address;
+    socklen_t client_address_len;
 
-    char userName[BUFFSIZE];
-    char userPsw[BUFFSIZE];
+    char userName[BUFFSIZE], userPsw[BUFFSIZE];
 
     /* LOOP1 - listen to incoming client, limit: one student */
     listen(*sd, 1);
-    connected_sd = accept(*sd, (struct sockaddr *)&from_address, &fromLength);
-    printf("[SERVER Notice] Clinet conneted! Listening...\n");
+    connected_sd = accept(*sd, (struct sockaddr *)&client_address, &client_address_len);
 
 /* LOOP2 - receive message from connected clients */
 CP_SESSION:

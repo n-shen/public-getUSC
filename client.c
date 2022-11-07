@@ -10,15 +10,28 @@
 #define PORT_NUM_TCP_SERVERM 25448
 #define IP_SERVERM "127.0.0.1"
 
-void initClient(int *sd)
+/* get client port number */
+int getMyPortNum(int sd, struct sockaddr_in my_address, socklen_t my_address_len)
+{
+
+    if (getsockname(sd, (struct sockaddr *)&my_address, &my_address_len) == -1)
+    {
+        perror("[Error] getsocket name");
+        exit(-1);
+    }
+
+    return ntohs(my_address.sin_port);
+}
+
+int initClient(int *sd)
 {
     struct sockaddr_in my_address;
 
     /* create a client socket */
     *sd = socket(AF_INET, SOCK_STREAM, 0);
     my_address.sin_family = AF_INET;
-    my_address.sin_port = htons(8899);
     my_address.sin_addr.s_addr = INADDR_ANY;
+    my_address.sin_port = 0; // assign client port dynamically
 
     /* client: bind socket and ip */
     if (bind(*sd, (struct sockaddr *)&my_address, sizeof(my_address)) < 0)
@@ -26,7 +39,12 @@ void initClient(int *sd)
         perror("Client: binding error");
         exit(-1);
     }
+
+    /* on screen */
     printf("The client is up and running.\n");
+
+    /* return client port number to main */
+    return getMyPortNum(*sd, my_address, sizeof(my_address));
 }
 
 void connServerM(int *sd)
@@ -35,14 +53,14 @@ void connServerM(int *sd)
 
     /* create a ServerM socket */
     serverM_address.sin_family = AF_INET;
-    serverM_address.sin_port = htons(PORT_NUM_TCP_SERVERM);
     serverM_address.sin_addr.s_addr = inet_addr(IP_SERVERM);
+    serverM_address.sin_port = htons(PORT_NUM_TCP_SERVERM);
 
     /* connect to serverM */
     if (connect(*sd, (struct sockaddr *)&serverM_address, sizeof(struct sockaddr_in)) < 0)
     {
         close(*sd);
-        perror("Client to ServerM: Error in connecting stream socket!");
+        perror("[Error] Client to ServerM - connecting stream socket");
         exit(-1);
     }
 }
@@ -84,9 +102,11 @@ CP_SESSION:
 
 int main(int argc, char *argv[])
 {
-    int sd;
+    int sd, my_port_num;
+    struct sockaddr_in my_address;
 
-    initClient(&sd);
+    my_port_num = initClient(&sd);
+    printf("Client port: %d.\n", my_port_num);
     connServerM(&sd);
     commuServerM(&sd);
 
