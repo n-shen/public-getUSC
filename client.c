@@ -88,25 +88,34 @@ void sendUserAuth(int *sd, int type)
         perror("Content send failed");
 }
 
-int recvUserAuthFeedback(int sd)
+void recvUserAuthFeedback(int sd, int *authAttempts)
 {
     int authFeedback = -1;
     if (read(sd, &authFeedback, sizeof(int)) <= 0)
         perror("Auth Feedback received failed");
 
-    return ntohs(authFeedback);
+    switch (ntohs(authFeedback))
+    {
+    case 101:
+        *authAttempts -= 1;
+        printf("Auth fb: %d.\n", ntohs(authFeedback));
+        break;
+
+    default:
+        break;
+    }
 }
 
 void commuServerM(int *sd)
 {
-    int authFeedback = -1;
+    int authAttempts = 3;
     /* CP_SESSION: send message to server repeatly */
 CP_SESSION:
     sendUserAuth(sd, 0); // 0: username;
     sendUserAuth(sd, 1); // 1: password;
-    authFeedback = recvUserAuthFeedback(*sd);
-    printf("Auth fb: %d.\n", authFeedback);
-
+    recvUserAuthFeedback(*sd, &authAttempts);
+    if (authAttempts == 0)
+        exit(-1);
     goto CP_SESSION;
 }
 
