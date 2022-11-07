@@ -7,24 +7,24 @@
 
 #define BUFFSIZE 100
 #define PORT_NUM_TCP 25448
+#define IP_SERVERM "127.0.0.1"
 
 void commuClient(int *sd);
 
 void initServerM(int *sd)
 {
     struct sockaddr_in server_address;
-    int rc; /* return code from recvfrom */
 
-    /* create a socket */
+    /* Create serverM socket. */
     *sd = socket(AF_INET, SOCK_STREAM, 0);
 
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(PORT_NUM_TCP);
     server_address.sin_addr.s_addr = INADDR_ANY;
 
-    /* bind socket and ip */
-    rc = bind(*sd, (struct sockaddr *)&server_address, sizeof(server_address));
-    if (rc < 0)
+    /* Bind ServerM socket and IP. */
+    // check return code from recvfrom
+    if (bind(*sd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0)
     {
         perror("serverM Warning: bind error");
         exit(-1);
@@ -36,15 +36,13 @@ void initServerM(int *sd)
 /* Server - Receive client's Auth input */
 void recvUserAuth(int *sd, int *connected_sd, char *userAuth)
 {
-    int rc;
     int sizeOfUserAuth;
     char buffer[BUFFSIZE];
     memset(buffer, 0, BUFFSIZE);
     char *ptr = buffer;
 
     /* read size */
-    rc = read(*connected_sd, &sizeOfUserAuth, sizeof(int));
-    if (rc <= 0)
+    if (read(*connected_sd, &sizeOfUserAuth, sizeof(int)) <= 0)
     {
         printf("\n/*-------- Clinet disconneted! Waiting new clients... -----------*/\n");
         commuClient(sd);
@@ -52,10 +50,9 @@ void recvUserAuth(int *sd, int *connected_sd, char *userAuth)
 
     /* read userAuth */
     sizeOfUserAuth = ntohs(sizeOfUserAuth);
-    rc = read(*connected_sd, ptr, sizeOfUserAuth);
-    if (rc <= 0)
+    if (read(*connected_sd, ptr, sizeOfUserAuth) < 0)
     {
-        perror("reveive error");
+        perror("[ERROR] Reveiving");
         exit(-1);
     }
 
@@ -66,7 +63,6 @@ void recvUserAuth(int *sd, int *connected_sd, char *userAuth)
 void commuClient(int *sd)
 {
     int connected_sd; /* socket descriptor */
-    int rc;           /* return code from recvfrom */
     struct sockaddr_in from_address;
     socklen_t fromLength;
 

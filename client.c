@@ -6,29 +6,45 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define BUFFSIZE 100
+#define BUFFSIZE 51
 #define PORT_NUM_TCP_SERVERM 25448
+#define IP_SERVERM "127.0.0.1"
 
 void initClient(int *sd)
 {
-    int portNumber = 8889; // DYNAMIC
-    char serverIP[29] = "127.0.0.1";
-    struct sockaddr_in server_address;
+    struct sockaddr_in my_address;
 
-    /* create a socket */
+    /* create a client socket */
     *sd = socket(AF_INET, SOCK_STREAM, 0);
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(PORT_NUM_TCP_SERVERM);
-    server_address.sin_addr.s_addr = inet_addr(serverIP);
+    my_address.sin_family = AF_INET;
+    my_address.sin_port = htons(8899);
+    my_address.sin_addr.s_addr = INADDR_ANY;
 
-    /* connect to serverM */
-    if (connect(*sd, (struct sockaddr *)&server_address, sizeof(struct sockaddr_in)) < 0)
+    /* client: bind socket and ip */
+    if (bind(*sd, (struct sockaddr *)&my_address, sizeof(my_address)) < 0)
     {
-        close(*sd);
-        perror("Client Warning: error connecting stream socket!");
+        perror("Client: binding error");
         exit(-1);
     }
     printf("The client is up and running.\n");
+}
+
+void connServerM(int *sd)
+{
+    struct sockaddr_in serverM_address;
+
+    /* create a ServerM socket */
+    serverM_address.sin_family = AF_INET;
+    serverM_address.sin_port = htons(PORT_NUM_TCP_SERVERM);
+    serverM_address.sin_addr.s_addr = inet_addr(IP_SERVERM);
+
+    /* connect to serverM */
+    if (connect(*sd, (struct sockaddr *)&serverM_address, sizeof(struct sockaddr_in)) < 0)
+    {
+        close(*sd);
+        perror("Client to ServerM: Error in connecting stream socket!");
+        exit(-1);
+    }
 }
 
 void sendUserAuth(int *sd, int type)
@@ -38,23 +54,21 @@ void sendUserAuth(int *sd, int type)
     int converted_sizeOfUserAuth;
     char userAuth[BUFFSIZE];
 
-    /* ask user for message input */
+    /* Ask client for Auth input */
     (type) ? (printf("Please enter the password: ")) : (printf("Please enter the username: "));
     fflush(stdout);
     fgets(userAuth, sizeof(userAuth), stdin);
     userAuth[strcspn(userAuth, "\n")] = 0;
 
-    /* send size of input(string) to the server */
+    /* Send the size of input(string) to the server */
     sizeOfUserAuth = strlen(userAuth);
     converted_sizeOfUserAuth = ntohs(strlen(userAuth));
-    rc = write(*sd, &converted_sizeOfUserAuth, sizeof(converted_sizeOfUserAuth));
-    if (rc < 0)
-        perror("send failed - 1");
+    if (write(*sd, &converted_sizeOfUserAuth, sizeof(converted_sizeOfUserAuth)) < 0)
+        perror("Size of content send failed");
 
-    /* send message(string) to the server */
-    rc = write(*sd, userAuth, sizeOfUserAuth);
-    if (rc < 0)
-        perror("send failed - 2");
+    /* Send message(string) to the server */
+    if (write(*sd, userAuth, sizeOfUserAuth) < 0)
+        perror("Content send failed");
 }
 
 void commuServerM(int *sd)
@@ -73,6 +87,7 @@ int main(int argc, char *argv[])
     int sd;
 
     initClient(&sd);
+    connServerM(&sd);
     commuServerM(&sd);
 
     return 0;
