@@ -12,19 +12,19 @@
 
 void commuClient(int *sd);
 
-void initServerMUDP(int *sd_udp, struct sockaddr_in *serverM_UDP_address)
+void initServerMUDP(int *sd_udp)
 {
-
+    struct sockaddr_in serverM_UDP_address;
     /* Create serverM socket. */
     *sd_udp = socket(AF_INET, SOCK_DGRAM, 0);
 
-    serverM_UDP_address->sin_family = AF_INET;
-    serverM_UDP_address->sin_port = htons(PORT_NUM_SERVERM_UDP);
-    serverM_UDP_address->sin_addr.s_addr = INADDR_ANY;
+    serverM_UDP_address.sin_family = AF_INET;
+    serverM_UDP_address.sin_port = htons(PORT_NUM_SERVERM_UDP);
+    serverM_UDP_address.sin_addr.s_addr = INADDR_ANY;
 
     /* Bind ServerC socket and IP. */
     // check return code from bind
-    if (bind(*sd_udp, (struct sockaddr *)serverM_UDP_address, sizeof(*serverM_UDP_address)) < 0)
+    if (bind(*sd_udp, (struct sockaddr *)&serverM_UDP_address, sizeof(serverM_UDP_address)) < 0)
     {
         perror("serverM Warning: UDP bind error");
         exit(-1);
@@ -39,7 +39,7 @@ void initServerMTCP(int *sd)
     *sd = socket(AF_INET, SOCK_STREAM, 0);
 
     serverM_address.sin_family = AF_INET;
-    serverM_address.sin_port = htons(PORT_NUM_TCP);
+    serverM_address.sin_port = htons(PORT_NUM_SERVERM_TCP);
     serverM_address.sin_addr.s_addr = INADDR_ANY;
 
     /* Bind ServerM socket and IP. */
@@ -108,19 +108,18 @@ void encryptAuth(char *userAuth[BUFFSIZE])
     strcpy(*userAuth, tmp);
 }
 
-void sendUserVerReq(char userName[BUFFSIZE], char userPsw[BUFFSIZE], int *sd_udp, struct sockaddr_in *serverM_UDP_address)
+void sendUserVerReq(char userName[BUFFSIZE], char userPsw[BUFFSIZE])
 {
     printf("sending to ServerC.\n");
-    int rc = sendto(*sd_udp, &userName, strlen(userName), 0, (struct sockaddr *)serverM_UDP_address, sizeof(*serverM_UDP_address));
-    printf("sending to ServerC %d.\n", rc);
+    // int rc = sendto(*sd_udp, &userName, strlen(userName), 0, (struct sockaddr *)serverM_UDP_address, sizeof(*serverM_UDP_address));
 }
-void verifyAuth(int connected_sd, char userName[BUFFSIZE], char userPsw[BUFFSIZE], int *sd_udp, struct sockaddr_in *serverM_UDP_address)
+void verifyAuth(int connected_sd, char userName[BUFFSIZE], char userPsw[BUFFSIZE])
 {
     /* encrypt auth */
     encryptAuth(&userName);
     encryptAuth(&userPsw);
     printf("encrypted: %s, %s.\n", userName, userPsw);
-    sendUserVerReq(userName, userPsw, sd_udp, serverM_UDP_address);
+    sendUserVerReq(userName, userPsw);
     /* send feedback */
     sendUserAuthFeedback(connected_sd);
 }
@@ -143,7 +142,7 @@ CP_SESSION:
     recvUserAuth(sd, &connected_sd, userName);
     recvUserAuth(sd, &connected_sd, userPsw);
     printf("Received Auth: [%s,%s]\n", userName, userPsw);
-    printf("The main server received the authentication for %s using TCP over port %d.\n", userName, PORT_NUM_TCP);
+    printf("The main server received the authentication for %s using TCP over port %d.\n", userName, PORT_NUM_SERVERM_TCP);
 
     verifyAuth(connected_sd, userName, userPsw);
 
@@ -152,10 +151,11 @@ CP_SESSION:
 
 int main(int argc, char *argv[])
 {
-    int sd; /* socket descriptor */
+    int sd_tcp, sd_udp; /* socket descriptor */
 
-    initServerM(&sd);
-    commuClient(&sd);
+    initServerMTCP(&sd_tcp);
+    initServerMUDP(&sd_udp);
+    commuClient(&sd_tcp);
 
     return 0;
 }
