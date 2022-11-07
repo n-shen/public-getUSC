@@ -6,72 +6,127 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define BUFFSIZE 100
+#define BUFFSIZE 51
+#define PORT_NUM_TCP_SERVERM 25448
+#define IP_SERVERM "127.0.0.1"
 
-void initClient(int *sd)
+/* get client port number */
+int getMyPortNum(int sd, struct sockaddr_in my_address, socklen_t my_address_len)
 {
-    int portNumber = 25448;
-    char serverIP[29] = "127.0.0.1";
-    struct sockaddr_in server_address;
 
-    /* create a socket */
-    *sd = socket(AF_INET, SOCK_STREAM, 0);
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(portNumber);
-    server_address.sin_addr.s_addr = inet_addr(serverIP);
-
-    /* connect to serverM */
-    if (connect(*sd, (struct sockaddr *)&server_address, sizeof(struct sockaddr_in)) < 0)
+    if (getsockname(sd, (struct sockaddr *)&my_address, &my_address_len) == -1)
     {
-        close(*sd);
-        perror("Client Warning: error connecting stream socket!");
+        perror("[Error] getsocket name");
         exit(-1);
     }
+
+    return ntohs(my_address.sin_port);
+}
+
+int initClient(int *sd)
+{
+    struct sockaddr_in my_address;
+
+    /* create a client socket */
+    *sd = socket(AF_INET, SOCK_STREAM, 0);
+    my_address.sin_family = AF_INET;
+    my_address.sin_addr.s_addr = INADDR_ANY;
+    my_address.sin_port = 0; // assign client port dynamically
+
+    /* client: bind socket and ip */
+    if (bind(*sd, (struct sockaddr *)&my_address, sizeof(my_address)) < 0)
+    {
+        perror("Client: binding error");
+        exit(-1);
+    }
+
+    /* on screen */
     printf("The client is up and running.\n");
+
+    /* return client port number to main */
+    return getMyPortNum(*sd, my_address, sizeof(my_address));
+}
+
+void connServerM(int *sd)
+{
+    struct sockaddr_in serverM_address;
+
+    /* create a ServerM socket */
+    serverM_address.sin_family = AF_INET;
+    serverM_address.sin_addr.s_addr = inet_addr(IP_SERVERM);
+    serverM_address.sin_port = htons(PORT_NUM_TCP_SERVERM);
+
+    /* connect to serverM */
+    if (connect(*sd, (struct sockaddr *)&serverM_address, sizeof(struct sockaddr_in)) < 0)
+    {
+        close(*sd);
+        perror("[Error] Client to ServerM - connecting stream socket");
+        exit(-1);
+    }
 }
 
 void sendUserAuth(int *sd, int type)
 {
-    int rc = 0;
     int sizeOfUserAuth;
     int converted_sizeOfUserAuth;
     char userAuth[BUFFSIZE];
 
-    /* ask user for message input */
+    /* Ask client for Auth input */
     (type) ? (printf("Please enter the password: ")) : (printf("Please enter the username: "));
     fflush(stdout);
     fgets(userAuth, sizeof(userAuth), stdin);
     userAuth[strcspn(userAuth, "\n")] = 0;
 
-    /* send size of input(string) to the server */
+    /* Send the size of input(string) to the server */
     sizeOfUserAuth = strlen(userAuth);
     converted_sizeOfUserAuth = ntohs(strlen(userAuth));
-    rc = write(*sd, &converted_sizeOfUserAuth, sizeof(converted_sizeOfUserAuth));
-    if (rc < 0)
-        perror("send failed - 1");
+    if (write(*sd, &converted_sizeOfUserAuth, sizeof(converted_sizeOfUserAuth)) < 0)
+        perror("Size of content send failed");
 
-    /* send message(string) to the server */
-    rc = write(*sd, userAuth, sizeOfUserAuth);
-    if (rc < 0)
-        perror("send failed - 2");
+    /* Send message(string) to the server */
+    if (write(*sd, userAuth, sizeOfUserAuth) < 0)
+        perror("Content send failed");
+}
+
+void recvUserAuthFeedback(int sd, int *authAttempts)
+{
+    int authFeedback = -1;
+    if (read(sd, &authFeedback, sizeof(int)) <= 0)
+        perror("Auth Feedback received failed");
+
+    switch (ntohs(authFeedback))
+    {
+    case 101:
+        *authAttempts -= 1;
+        printf("Auth fb: %d.\n", ntohs(authFeedback));
+        break;
+
+    default:
+        break;
+    }
 }
 
 void commuServerM(int *sd)
 {
-
+    int authAttempts = 3;
     /* CP_SESSION: send message to server repeatly */
 CP_SESSION:
     sendUserAuth(sd, 0); // 0: username;
     sendUserAuth(sd, 1); // 1: password;
-
+    recvUserAuthFeedback(*sd, &authAttempts);
+    if (authAttempts == 0)
+        exit(-1);
     goto CP_SESSION;
 }
 
 int main(int argc, char *argv[])
 {
-    int sd;
+    int sd, my_port_num;
+    struct sockaddr_in my_address;
 
-    initClient(&sd);
+    my_port_num = initClient(&sd);
+    printf("Client port: %d.\n", my_port_num);
+    connServerM(&sd);
     commuServerM(&sd);
 
     return 0;

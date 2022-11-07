@@ -11,3 +11,4 @@ server:
 
 clean:
 	rm -rf client serverM
+	
