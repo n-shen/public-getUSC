@@ -23,12 +23,14 @@ void initServerC(int *sd)
 
 void commuServerM(int *sd)
 {
-    int connected_sd; /* return code from recvfrom */
+    /* ServerM(my client) info init */
+    int connected_sd;
     struct sockaddr_in serverM_address;
     socklen_t serverM_address_len;
     struct User_auth *buffer = malloc(sizeof(struct User_auth));
 
 LOOP1:
+    /* ServerM(my client) recv */
     connected_sd = recvfrom(*sd, (struct User_auth *)buffer, (sizeof(*buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
     printf("rc: %d.\n", connected_sd);
     /* Server - create upload report */
