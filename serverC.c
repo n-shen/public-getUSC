@@ -36,15 +36,14 @@ void commuServerM(int *sd)
     int connected_sd; /* return code from recvfrom */
     struct sockaddr_in serverM_address;
     socklen_t serverM_address_len;
+    char buffer[BUFFSIZE];
 
 LOOP1:
-    printf("/*-------- ServerC Status: Listening -----------*/\n");
-
-    char buffer[BUFFSIZE];
     connected_sd = recvfrom(*sd, (char *)buffer, BUFFSIZE, MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
+    printf("rc: %d.\n", connected_sd);
     /* Server - create upload report */
     buffer[connected_sd] = '\0';
-    printf("[Server Notice] From client: %s\n", buffer);
+    printf("[Server Notice] From Server: %s\n", buffer);
 
     goto LOOP1; /* repeat */
 }
