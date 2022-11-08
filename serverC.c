@@ -24,18 +24,24 @@ void initServerC(int *sd)
 void commuServerM(int *sd)
 {
     /* ServerM(my client) info init */
-    int connected_sd;
+    int rc;
     struct sockaddr_in serverM_address;
     socklen_t serverM_address_len;
     struct User_auth *buffer = malloc(sizeof(struct User_auth));
 
 LOOP1:
     /* ServerM(my client) recv */
-    connected_sd = recvfrom(*sd, (struct User_auth *)buffer, (sizeof(*buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
-    printf("rc: %d.\n", connected_sd);
+    rc = recvfrom(*sd, (struct User_auth *)buffer, (sizeof(*buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
+    if (rc <= 0)
+        perror("ServerC recv req failed");
     /* Server - create upload report */
     printf("[Server Notice] From ServerM, username: %s\n", buffer->userName);
     printf("[Server Notice] From ServerM, psw: %s\n", buffer->userPsw);
+
+    char *feedback = "good";
+    rc = sendto(*sd, (char *)feedback, strlen(feedback), 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));
+    if (rc <= 0)
+        perror("ServerC send feedback failed");
 
     goto LOOP1; /* repeat */
 }

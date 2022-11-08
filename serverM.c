@@ -100,6 +100,8 @@ void verifyAuth(struct User_auth *newUser, int *sd_udp, struct sockaddr_in *addr
     printf("Encrypted: %s, %s.\n", newUser->userName, newUser->userPsw);
     if (sendto(*sd_udp, (struct User_auth *)newUser, (1024 + sizeof(newUser)), 0, (struct sockaddr *)address_ServerC, sizeof(*address_ServerC)) <= 0)
         perror("UDP send user auth req failed");
+
+    
 }
 
 void authProcess(int *sd_tcp, int *connected_sd_tcp, int *sd_udp, struct sockaddr_in *address_ServerC)
