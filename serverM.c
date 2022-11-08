@@ -112,24 +112,19 @@ void encryptAuth(char *userAuth)
     strncpy(userAuth, tmp, BUFFSIZE);
 }
 
-void sendUserVerReq(char userName[BUFFSIZE], char userPsw[BUFFSIZE])
-{
-    printf("sending to ServerC.\n");
-    // int rc = sendto(*sd_udp, &userName, strlen(userName), 0, (struct sockaddr *)serverM_UDP_address, sizeof(*serverM_UDP_address));
-}
-void verifyAuth(int *connected_sd, char *userName, char *userPsw)
+void verifyAuth(int *connected_sd, char *userName, char *userPsw, int *sd_ServerC, struct sockaddr_in *address_ServerC)
 {
     /* encrypt auth */
     encryptAuth(userName);
     encryptAuth(userPsw);
     printf("Encrypted: %s, %s.\n", userName, userPsw);
-    // userName[strcspn(userName, "\n")] = 0;
-    // int rc = sendto(sd_ServerC, &userName, strlen(userName), 0, (struct sockaddr *)&address_ServerC, sizeof(address_ServerC));
+    if (sendto(*sd_ServerC, userName, strlen(userName), 0, (struct sockaddr *)address_ServerC, sizeof(*address_ServerC)) <= 0)
+        perror("UDP send failed");
     /* send feedback */
     sendUserAuthFeedback(connected_sd);
 }
 
-void authProcess(int *sd, int *connected_sd)
+void authProcess(int *sd, int *connected_sd, int *sd_ServerC, struct sockaddr_in *address_ServerC)
 {
     char userName[BUFFSIZE], userPsw[BUFFSIZE];
 
@@ -138,7 +133,7 @@ void authProcess(int *sd, int *connected_sd)
     printf("Received Auth: [%s,%s]\n", userName, userPsw);
     printf("The main server received the authentication for %s using TCP over port %d.\n", userName, PORT_NUM_SERVERM_TCP);
 
-    verifyAuth(connected_sd, userName, userPsw);
+    verifyAuth(connected_sd, userName, userPsw, sd_ServerC, address_ServerC);
 }
 
 void connectServerC(int *sd, struct sockaddr_in *server_address)
@@ -167,7 +162,7 @@ void commuClient(int *sd)
 
 /* LOOP2 - receive message from connected clients */
 CP_SESSION:
-    authProcess(sd, &connected_sd);
+    authProcess(sd, &connected_sd, &sd_ServerC, &address_ServerC);
 
     goto CP_SESSION;
 }
