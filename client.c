@@ -1,14 +1,4 @@
-#include <string.h>
-#include <stdio.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <stdlib.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-
-#define BUFFSIZE 51
-#define PORT_NUM_TCP_SERVERM 25448
-#define IP_SERVERM "127.0.0.1"
+#include "header.h"
 
 /* get client port number */
 int getMyPortNum(int sd, struct sockaddr_in my_address, socklen_t my_address_len)
@@ -54,7 +44,7 @@ void connServerM(int *sd)
     /* create a ServerM socket */
     serverM_address.sin_family = AF_INET;
     serverM_address.sin_addr.s_addr = inet_addr(IP_SERVERM);
-    serverM_address.sin_port = htons(PORT_NUM_TCP_SERVERM);
+    serverM_address.sin_port = htons(PORT_NUM_SERVERM_TCP);
 
     /* connect to serverM */
     if (connect(*sd, (struct sockaddr *)&serverM_address, sizeof(struct sockaddr_in)) < 0)

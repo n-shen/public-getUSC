@@ -1,16 +1,4 @@
-#include <string.h>
-#include <stdio.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <stdlib.h>
-
-#define BUFFSIZE 51
-#define PORT_NUM_SERVERM_TCP 25448
-#define PORT_NUM_SERVERM_UDP 24448
-#define PORT_NUM_SERVERC_UDP 21448
-#define IP_SERVERM "127.0.0.1"
-#define IP_SERVERC "127.0.0.1"
+#include "header.h"
 
 void commuClient(int *sd);
 
@@ -62,16 +50,8 @@ void recvUserAuth(int *sd, int *connected_sd, char *userAuth)
     char buffer[BUFFSIZE];
     memset(buffer, 0, BUFFSIZE);
 
-    /* read size */
-    if (read(*connected_sd, &sizeOfUserAuth, sizeof(int)) <= 0)
-    {
-        printf("\n/*-------- Clinet disconneted! Waiting new clients... -----------*/\n");
-        commuClient(sd);
-    }
-
-    /* read userAuth */
-
-    if (read(*connected_sd, &buffer, ntohs(sizeOfUserAuth)) < 0)
+    /* read size and buffer */
+    if ((read(*connected_sd, &sizeOfUserAuth, sizeof(int)) <= 0) || (read(*connected_sd, &buffer, ntohs(sizeOfUserAuth)) < 0))
     {
         printf("\n/*-------- Clinet disconneted! Waiting new clients... -----------*/\n");
         commuClient(sd);
@@ -112,28 +92,28 @@ void encryptAuth(char *userAuth)
     strncpy(userAuth, tmp, BUFFSIZE);
 }
 
-void verifyAuth(int *connected_sd, char *userName, char *userPsw, int *sd_ServerC, struct sockaddr_in *address_ServerC)
+void verifyAuth(int *connected_sd, struct User_auth *newUser, int *sd_ServerC, struct sockaddr_in *address_ServerC)
 {
     /* encrypt auth */
-    encryptAuth(userName);
-    encryptAuth(userPsw);
-    printf("Encrypted: %s, %s.\n", userName, userPsw);
-    if (sendto(*sd_ServerC, userName, strlen(userName), 0, (struct sockaddr *)address_ServerC, sizeof(*address_ServerC)) <= 0)
-        perror("UDP send failed");
+    encryptAuth(newUser->userName);
+    encryptAuth(newUser->userPsw);
+    printf("Encrypted: %s, %s.\n", newUser->userName, newUser->userPsw);
+    if (sendto(*sd_ServerC, (struct User_auth *)newUser, (1024 + sizeof(newUser)), 0, (struct sockaddr *)address_ServerC, sizeof(*address_ServerC)) <= 0)
+        perror("UDP send user auth req failed");
     /* send feedback */
     sendUserAuthFeedback(connected_sd);
 }
 
 void authProcess(int *sd, int *connected_sd, int *sd_ServerC, struct sockaddr_in *address_ServerC)
 {
-    char userName[BUFFSIZE], userPsw[BUFFSIZE];
+    struct User_auth newUser;
 
-    recvUserAuth(sd, connected_sd, userName);
-    recvUserAuth(sd, connected_sd, userPsw);
-    printf("Received Auth: [%s,%s]\n", userName, userPsw);
-    printf("The main server received the authentication for %s using TCP over port %d.\n", userName, PORT_NUM_SERVERM_TCP);
+    recvUserAuth(sd, connected_sd, newUser.userName);
+    recvUserAuth(sd, connected_sd, newUser.userPsw);
+    printf("Received Auth: [%s,%s]\n", newUser.userName, newUser.userPsw);
+    printf("The main server received the authentication for %s using TCP over port %d.\n", newUser.userName, PORT_NUM_SERVERM_TCP);
 
-    verifyAuth(connected_sd, userName, userPsw, sd_ServerC, address_ServerC);
+    verifyAuth(connected_sd, &newUser, sd_ServerC, address_ServerC);
 }
 
 void connectServerC(int *sd, struct sockaddr_in *server_address)
