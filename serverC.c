@@ -35,15 +35,16 @@ LOOP1:
     rc = recvfrom(*sd, (struct User_auth *)buffer, (sizeof(*buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
     if (rc <= 0)
         perror("ServerC recv req failed");
+    printf("The ServerC received an authentication request from the Main Server.\n");
     /* Server - create upload report */
-    printf("[Server Notice] From ServerM, username: %s\n", buffer->userName);
-    printf("[Server Notice] From ServerM, psw: %s\n", buffer->userPsw);
+    printf("[Server Notice] From ServerM, username: %s, psw:%s.\n", buffer->userName, buffer->userPsw);
 
     strcpy(feedback, "100");
     rc = sendto(*sd, (char *)feedback, FEEDBACKSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));
     if (rc <= 0)
         perror("ServerC send feedback failed");
 
+    printf("The ServerC finished sending the response to the Main Server.\n");
     goto LOOP1; /* repeat */
 }
 

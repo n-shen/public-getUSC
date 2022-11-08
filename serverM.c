@@ -69,6 +69,7 @@ void sendUserAuthFeedback(int *connected_sd)
     authFeedbackType = ntohs(101);
     if (write(*connected_sd, &authFeedbackType, sizeof(int)) < 0)
         perror("User Auth Feedback sent failed");
+    printf("The main server sent the authentication result to client.");
 }
 
 /* encrypt auth */
@@ -105,6 +106,7 @@ void verifyAuth(struct User_auth *newUser, int *sd_udp, struct sockaddr_in *addr
     printf("Encrypted: %s, %s.\n", newUser->userName, newUser->userPsw);
     if (sendto(*sd_udp, (struct User_auth *)newUser, (1024 + sizeof(newUser)), 0, (struct sockaddr *)address_ServerC, sizeof(*address_ServerC)) <= 0)
         perror("UDP send user auth req failed");
+    printf("The main server sent an authentication request to serverC.\n");
 
     /* recv verification feedback from serverC */
     rc = recvfrom(*sd_udp, (char *)feedback, FEEDBACKSIZE, MSG_WAITALL, (struct sockaddr *)address_ServerC, &serverC_address_len);
@@ -112,6 +114,7 @@ void verifyAuth(struct User_auth *newUser, int *sd_udp, struct sockaddr_in *addr
         perror("ServerM recv feedback failed");
     feedback[rc] = '\0';
     printf("ServerC: %s.\n", feedback);
+    printf("The main server received the result of the authentication request from ServerC using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
 }
 
 void authProcess(int *sd_tcp, int *connected_sd_tcp, int *sd_udp, struct sockaddr_in *address_ServerC)

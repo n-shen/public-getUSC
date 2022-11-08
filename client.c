@@ -71,11 +71,11 @@ void sendUserAuth(int *sd, int type)
     sizeOfUserAuth = strlen(userAuth);
     converted_sizeOfUserAuth = ntohs(strlen(userAuth));
     if (write(*sd, &converted_sizeOfUserAuth, sizeof(converted_sizeOfUserAuth)) < 0)
-        perror("Size of content send failed");
+        perror("Size of AuthReq send failed");
 
     /* Send message(string) to the server */
     if (write(*sd, userAuth, sizeOfUserAuth) < 0)
-        perror("Content send failed");
+        perror("AuthReq send failed");
 }
 
 void recvUserAuthFeedback(int sd, int *authAttempts)
