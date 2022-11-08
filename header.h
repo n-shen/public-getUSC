@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 
 #define BUFFSIZE 51
+#define FEEDBACKSIZE 4
 #define PORT_NUM_SERVERM_TCP 25448
 #define PORT_NUM_SERVERM_UDP 24448
 #define PORT_NUM_SERVERC_UDP 21448

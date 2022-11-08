@@ -28,6 +28,7 @@ void commuServerM(int *sd)
     struct sockaddr_in serverM_address;
     socklen_t serverM_address_len;
     struct User_auth *buffer = malloc(sizeof(struct User_auth));
+    char feedback[FEEDBACKSIZE];
 
 LOOP1:
     /* ServerM(my client) recv */
@@ -38,8 +39,8 @@ LOOP1:
     printf("[Server Notice] From ServerM, username: %s\n", buffer->userName);
     printf("[Server Notice] From ServerM, psw: %s\n", buffer->userPsw);
 
-    char *feedback = "good";
-    rc = sendto(*sd, (char *)feedback, strlen(feedback), 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));
+    strcpy(feedback, "100");
+    rc = sendto(*sd, (char *)feedback, FEEDBACKSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));
     if (rc <= 0)
         perror("ServerC send feedback failed");
 

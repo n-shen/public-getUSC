@@ -94,6 +94,11 @@ void encryptAuth(char *userAuth)
 
 void verifyAuth(struct User_auth *newUser, int *sd_udp, struct sockaddr_in *address_ServerC)
 {
+    /* UDP: ServerC(my server) info init */
+    int rc;
+    socklen_t serverC_address_len;
+    char feedback[FEEDBACKSIZE];
+
     /* encrypt auth */
     encryptAuth(newUser->userName);
     encryptAuth(newUser->userPsw);
@@ -101,7 +106,12 @@ void verifyAuth(struct User_auth *newUser, int *sd_udp, struct sockaddr_in *addr
     if (sendto(*sd_udp, (struct User_auth *)newUser, (1024 + sizeof(newUser)), 0, (struct sockaddr *)address_ServerC, sizeof(*address_ServerC)) <= 0)
         perror("UDP send user auth req failed");
 
-    
+    /* recv verification feedback from serverC */
+    rc = recvfrom(*sd_udp, (char *)feedback, FEEDBACKSIZE, MSG_WAITALL, (struct sockaddr *)address_ServerC, &serverC_address_len);
+    if (rc <= 0)
+        perror("ServerM recv feedback failed");
+    feedback[rc] = '\0';
+    printf("ServerC: %s.\n", feedback);
 }
 
 void authProcess(int *sd_tcp, int *connected_sd_tcp, int *sd_udp, struct sockaddr_in *address_ServerC)
