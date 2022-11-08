@@ -112,7 +112,7 @@ void verifyAuth(struct User_auth *newUser, int *sd_udp, struct sockaddr_in *addr
     if (rc <= 0)
         perror("ServerM recv feedback failed");
     feedback[rc] = '\0';
-    printf("ServerC: %s.\n", feedback);
+    printf("ServerC result: %s.\n", feedback);
     printf("The main server received the result of the authentication request from ServerC using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
 }
 
