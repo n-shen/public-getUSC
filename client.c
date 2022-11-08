@@ -1,14 +1,4 @@
-#include <string.h>
-#include <stdio.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <stdlib.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-
-#define BUFFSIZE 51
-#define PORT_NUM_TCP_SERVERM 25448
-#define IP_SERVERM "127.0.0.1"
+#include "header.h"
 
 /* get client port number */
 int getMyPortNum(int sd, struct sockaddr_in my_address, socklen_t my_address_len)
@@ -36,7 +26,7 @@ int initClient(int *sd)
     /* client: bind socket and ip */
     if (bind(*sd, (struct sockaddr *)&my_address, sizeof(my_address)) < 0)
     {
-        perror("Client: binding error");
+        perror("[Error] client binding error");
         exit(-1);
     }
 
@@ -54,7 +44,7 @@ void connServerM(int *sd)
     /* create a ServerM socket */
     serverM_address.sin_family = AF_INET;
     serverM_address.sin_addr.s_addr = inet_addr(IP_SERVERM);
-    serverM_address.sin_port = htons(PORT_NUM_TCP_SERVERM);
+    serverM_address.sin_port = htons(PORT_NUM_SERVERM_TCP);
 
     /* connect to serverM */
     if (connect(*sd, (struct sockaddr *)&serverM_address, sizeof(struct sockaddr_in)) < 0)
@@ -65,27 +55,30 @@ void connServerM(int *sd)
     }
 }
 
-void sendUserAuth(int *sd, int type)
+/* Ask client for Auth input */
+void askUserAuth(char *userAuth, int type)
 {
-    int sizeOfUserAuth;
-    int converted_sizeOfUserAuth;
-    char userAuth[BUFFSIZE];
-
-    /* Ask client for Auth input */
+    char buffer[BUFFSIZE];
     (type) ? (printf("Please enter the password: ")) : (printf("Please enter the username: "));
     fflush(stdout);
-    fgets(userAuth, sizeof(userAuth), stdin);
-    userAuth[strcspn(userAuth, "\n")] = 0;
+    fgets(buffer, sizeof(buffer), stdin);
+    buffer[strcspn(buffer, "\n")] = 0;
+    strcpy(userAuth, buffer);
+}
 
-    /* Send the size of input(string) to the server */
-    sizeOfUserAuth = strlen(userAuth);
-    converted_sizeOfUserAuth = ntohs(strlen(userAuth));
-    if (write(*sd, &converted_sizeOfUserAuth, sizeof(converted_sizeOfUserAuth)) < 0)
-        perror("Size of content send failed");
+void sendUserAuth(int *sd, struct User_auth *newUser)
+{
 
-    /* Send message(string) to the server */
-    if (write(*sd, userAuth, sizeOfUserAuth) < 0)
-        perror("Content send failed");
+    /* Ask client for Auth input */
+    askUserAuth(newUser->userName, 0); // 0: username;
+    askUserAuth(newUser->userPsw, 1);  // 1: password;
+    printf("%s, %s\n", newUser->userName, newUser->userPsw);
+
+    /* Send message(string) to the serverM via TCP */
+    if (write(*sd, (struct User_auth *)newUser, sizeof(struct User_auth)) < 0)
+        perror("AuthReq send failed");
+
+    printf("%s sent an authentication request to the main server.\n", newUser->userName);
 }
 
 void recvUserAuthFeedback(int sd, int *authAttempts)
@@ -109,13 +102,17 @@ void recvUserAuthFeedback(int sd, int *authAttempts)
 void commuServerM(int *sd)
 {
     int authAttempts = 3;
+    struct User_auth newUser;
+
     /* CP_SESSION: send message to server repeatly */
 CP_SESSION:
-    sendUserAuth(sd, 0); // 0: username;
-    sendUserAuth(sd, 1); // 1: password;
+
+    sendUserAuth(sd, &newUser);
     recvUserAuthFeedback(*sd, &authAttempts);
+
     if (authAttempts == 0)
         exit(-1);
+
     goto CP_SESSION;
 }
 
