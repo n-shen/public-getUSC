@@ -44,21 +44,20 @@ void initServerMTCP(int *sd)
 }
 
 /* Server - Receive client's Auth input */
-void recvUserAuth(int *sd_tcp, int *sd_udp, int *connected_sd_tcp, char *userAuth)
+void recvUserAuth(int *sd_tcp, int *sd_udp, int *connected_sd_tcp, struct User_auth *userAuth)
 {
-    int sizeOfUserAuth;
-    char buffer[BUFFSIZE];
-    memset(buffer, 0, BUFFSIZE);
+    int sizeOfUserAuth = sizeof(struct User_auth);
+    struct User_auth *buffer = malloc(sizeOfUserAuth);
 
     /* read size and buffer */
-    if ((read(*connected_sd_tcp, &sizeOfUserAuth, sizeof(int)) <= 0) || (read(*connected_sd_tcp, &buffer, ntohs(sizeOfUserAuth)) < 0))
+    if (read(*connected_sd_tcp, buffer, ntohs(sizeOfUserAuth)) <= 0)
     {
         printf("\n/*-------- Clinet disconneted! Waiting new clients... -----------*/\n");
         commuClient(sd_tcp, sd_udp);
     }
 
     /* Server - return result */
-    strncpy(userAuth, buffer, BUFFSIZE);
+    memcpy(userAuth, buffer, sizeOfUserAuth);
 }
 
 void sendUserAuthFeedback(int *connected_sd)
@@ -69,7 +68,7 @@ void sendUserAuthFeedback(int *connected_sd)
     authFeedbackType = ntohs(101);
     if (write(*connected_sd, &authFeedbackType, sizeof(int)) < 0)
         perror("User Auth Feedback sent failed");
-    printf("The main server sent the authentication result to client.");
+    printf("The main server sent the authentication result to client.\n");
 }
 
 /* encrypt auth */
@@ -121,8 +120,7 @@ void authProcess(int *sd_tcp, int *connected_sd_tcp, int *sd_udp, struct sockadd
 {
     struct User_auth newUser;
 
-    recvUserAuth(sd_tcp, sd_udp, connected_sd_tcp, newUser.userName);
-    recvUserAuth(sd_tcp, sd_udp, connected_sd_tcp, newUser.userPsw);
+    recvUserAuth(sd_tcp, sd_udp, connected_sd_tcp, &newUser);
     printf("Received Auth: [%s,%s]\n", newUser.userName, newUser.userPsw);
     printf("The main server received the authentication for %s using TCP over port %d.\n", newUser.userName, PORT_NUM_SERVERM_TCP);
 
