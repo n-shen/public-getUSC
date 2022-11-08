@@ -64,6 +64,7 @@ void askUserAuth(char *userAuth, int type)
     fgets(buffer, sizeof(buffer), stdin);
     buffer[strcspn(buffer, "\n")] = 0;
     strcpy(userAuth, buffer);
+    // printf("input len:%lu.", strlen(userAuth));
 }
 
 void sendUserAuth(int *sd, struct User_auth *newUser)
@@ -81,17 +82,30 @@ void sendUserAuth(int *sd, struct User_auth *newUser)
     printf("%s sent an authentication request to the main server.\n", newUser->userName);
 }
 
-void recvUserAuthFeedback(int sd, int *authAttempts)
+void recvUserAuthFeedback(int sd, int my_port_num, char *userName, int *authAttempts)
 {
-    int authFeedback = -1;
-    if (read(sd, &authFeedback, sizeof(int)) <= 0)
+    char authFeedback[FEEDBACKSIZE];
+    if (read(sd, &authFeedback, sizeof(authFeedback)) <= 0)
         perror("Auth Feedback received failed");
+    printf("%s received the result of authentication using TCP over port %d. ", userName, my_port_num);
 
-    switch (ntohs(authFeedback))
+    switch (atoi(authFeedback))
     {
     case 101:
         *authAttempts -= 1;
-        printf("Auth fb: %d.\n", ntohs(authFeedback));
+        printf("Authentication failed: Username does not exist\n");
+        printf("Attempts remaining:%d\n", *authAttempts);
+        break;
+
+    case 102:
+        *authAttempts -= 1;
+        printf("Authentication failed: Password does not match\n");
+        printf("Attempts remaining:%d\n", *authAttempts);
+        break;
+
+    case 103:
+        *authAttempts = -99;
+        printf("Authentication is successful\n");
         break;
 
     default:
@@ -99,21 +113,26 @@ void recvUserAuthFeedback(int sd, int *authAttempts)
     }
 }
 
-void commuServerM(int *sd)
+void commuServerM(int *sd, int my_port_num)
 {
-    int authAttempts = 3;
+    int authAttempts = AUTHATTEMPTS;
     struct User_auth newUser;
 
-    /* CP_SESSION: send message to server repeatly */
-CP_SESSION:
-
+    /* AUTH_SESSION: send auth msg to server repeatly */
+AUTH_SESSION:
     sendUserAuth(sd, &newUser);
-    recvUserAuthFeedback(*sd, &authAttempts);
-
+    recvUserAuthFeedback(*sd, my_port_num, newUser.userName, &authAttempts);
     if (authAttempts == 0)
+    {
+        printf("Authentication Failed for %d attempts. Client will shut down.\n", AUTHATTEMPTS);
         exit(-1);
+    }
+    else if (authAttempts == -99)
+        goto MAIN_SESSION;
+    goto AUTH_SESSION;
 
-    goto CP_SESSION;
+MAIN_SESSION:
+    printf("Logged In.\n");
 }
 
 int main(int argc, char *argv[])
@@ -122,9 +141,8 @@ int main(int argc, char *argv[])
     struct sockaddr_in my_address;
 
     my_port_num = initClient(&sd);
-    printf("Client port: %d.\n", my_port_num);
     connServerM(&sd);
-    commuServerM(&sd);
+    commuServerM(&sd, my_port_num);
 
     return 0;
 }

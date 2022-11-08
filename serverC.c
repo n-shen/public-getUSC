@@ -25,12 +25,12 @@ int validateAuth(struct User_auth auth)
 {
     /* file sys */
     FILE *fp;
-    char *line = NULL;
+    char line[BUFFSIZE * 2 + 1];
     size_t len = 0;
     ssize_t read;
 
-    char *name, *psw;
     int code = 101;
+    char *name, *psw;
 
     fp = fopen("./cred.txt", "r");
     if (fp == NULL)
@@ -39,15 +39,19 @@ int validateAuth(struct User_auth auth)
         exit(EXIT_FAILURE);
     }
 
-    while ((read = getline(&line, &len, fp)) != -1)
+    while (fgets(line, sizeof(line), fp) != NULL)
     {
         name = strtok(line, ",");
         if (strcmp(name, auth.userName) == 0)
         {
             code += 1;
             psw = strtok(NULL, ",");
+            psw[strcspn(psw, "\n")] = 0;
+            psw[strlen(psw) - 1] = '\0';
+
             if (strcmp(psw, auth.userPsw) == 0)
                 code += 1;
+            printf("psw passed: %s.\n", psw);
             break;
         }
     }
