@@ -46,8 +46,11 @@ int validateAuth(struct User_auth auth)
         {
             code += 1;
             psw = strtok(NULL, ",");
-            psw[strcspn(psw, "\n")] = 0;
-            psw[strlen(psw) - 1] = '\0';
+            if (psw[strlen(psw) - 1] == '\n')
+            {
+                psw[strcspn(psw, "\n")] = 0;
+                psw[strlen(psw) - 1] = '\0';
+            }
 
             if (strcmp(psw, auth.userPsw) == 0)
                 code += 1;
