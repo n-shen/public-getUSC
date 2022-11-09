@@ -60,13 +60,10 @@ void recvUserAuth(int *sd_tcp, int *sd_udp, int *connected_sd_tcp, struct User_a
     memcpy(userAuth, buffer, sizeOfUserAuth);
 }
 
-void sendUserAuthFeedback(int *connected_sd)
+void sendUserAuthFeedback(int *connected_sd, char *fbCode)
 {
-    int authFeedbackType;
-
     /* Send the size of input(string) to the server */
-    authFeedbackType = ntohs(101);
-    if (write(*connected_sd, &authFeedbackType, sizeof(int)) < 0)
+    if (write(*connected_sd, fbCode, sizeof(int)) < 0)
         perror("User Auth Feedback sent failed");
     printf("The main server sent the authentication result to client.\n");
 }
@@ -92,12 +89,11 @@ void encryptAuth(char *userAuth)
     strncpy(userAuth, tmp, BUFFSIZE);
 }
 
-void verifyAuth(struct User_auth *newUser, int *sd_udp, struct sockaddr_in *address_ServerC)
+void verifyAuth(struct User_auth *newUser, char *feedback, int *sd_udp, struct sockaddr_in *address_ServerC)
 {
     /* UDP: ServerC(my server) info init */
     int rc;
     socklen_t serverC_address_len;
-    char feedback[FEEDBACKSIZE];
 
     /* encrypt auth */
     encryptAuth(newUser->userName);
@@ -112,21 +108,23 @@ void verifyAuth(struct User_auth *newUser, int *sd_udp, struct sockaddr_in *addr
     if (rc <= 0)
         perror("ServerM recv feedback failed");
     feedback[rc] = '\0';
-    printf("ServerC: %s.\n", feedback);
     printf("The main server received the result of the authentication request from ServerC using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
 }
 
 void authProcess(int *sd_tcp, int *connected_sd_tcp, int *sd_udp, struct sockaddr_in *address_ServerC)
 {
     struct User_auth newUser;
+    char fbCode[FEEDBACKSIZE];
 
     recvUserAuth(sd_tcp, sd_udp, connected_sd_tcp, &newUser);
     printf("Received Auth: [%s,%s]\n", newUser.userName, newUser.userPsw);
     printf("The main server received the authentication for %s using TCP over port %d.\n", newUser.userName, PORT_NUM_SERVERM_TCP);
 
-    verifyAuth(&newUser, sd_udp, address_ServerC);
-
-    sendUserAuthFeedback(connected_sd_tcp); // send feedback to client via TCP
+    verifyAuth(&newUser, fbCode, sd_udp, address_ServerC);
+    /* send feedback to client via TCP */
+    if (write(*connected_sd_tcp, fbCode, sizeof(fbCode)) < 0)
+        perror("User Auth Feedback sent failed");
+    printf("The main server sent the authentication result to client.\n");
 }
 
 void connectServerC(struct sockaddr_in *server_address)

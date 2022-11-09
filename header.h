@@ -8,12 +8,16 @@
 
 #define BUFFSIZE 51
 #define FEEDBACKSIZE 4
-#define PORT_NUM_SERVERM_TCP 25448
-#define PORT_NUM_SERVERM_UDP 24448
-#define PORT_NUM_SERVERC_UDP 21448
+#define AUTHATTEMPTS 3 // must greater than 0
+
 #define IP_SERVERM "127.0.0.1"
 #define IP_SERVERC "127.0.0.1"
 
+#define PORT_NUM_SERVERM_TCP 25448
+#define PORT_NUM_SERVERM_UDP 24448
+#define PORT_NUM_SERVERC_UDP 21448
+
+/* DataStructure: User Auth file */
 struct User_auth
 {
     char userName[BUFFSIZE];

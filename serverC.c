@@ -21,6 +21,49 @@ void initServerC(int *sd)
     printf("The ServerC is up and running using UDP on port %d.\n", PORT_NUM_SERVERC_UDP);
 }
 
+int validateAuth(struct User_auth auth)
+{
+    /* file sys */
+    FILE *fp;
+    char line[BUFFSIZE * 2 + 1];
+    size_t len = 0;
+    ssize_t read;
+
+    int code = 101;
+    char *name, *psw;
+
+    fp = fopen("./cred.txt", "r");
+    if (fp == NULL)
+    {
+        printf("[ERROR] cred.txt load failed.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    while (fgets(line, sizeof(line), fp) != NULL)
+    {
+        name = strtok(line, ",");
+        if (strcmp(name, auth.userName) == 0)
+        {
+            code += 1;
+            psw = strtok(NULL, ",");
+            if (psw[strlen(psw) - 1] == '\n')
+            {
+                psw[strcspn(psw, "\n")] = 0;
+                psw[strlen(psw) - 1] = '\0';
+            }
+
+            if (strcmp(psw, auth.userPsw) == 0)
+                code += 1;
+            printf("psw passed: %s.\n", psw);
+            break;
+        }
+    }
+
+    fclose(fp); /* close file */
+
+    return code;
+}
+
 void commuServerM(int *sd)
 {
     /* ServerM(my client) info init */
@@ -39,12 +82,14 @@ LOOP1:
     /* Server - create upload report */
     printf("[Server Notice] From ServerM, username: %s, psw:%s.\n", buffer->userName, buffer->userPsw);
 
-    strcpy(feedback, "100");
+    sprintf(feedback, "%d", validateAuth(*buffer));
+
     rc = sendto(*sd, (char *)feedback, FEEDBACKSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));
     if (rc <= 0)
         perror("ServerC send feedback failed");
 
     printf("The ServerC finished sending the response to the Main Server.\n");
+
     goto LOOP1; /* repeat */
 }
 
