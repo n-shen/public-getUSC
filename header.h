@@ -8,14 +8,15 @@
 
 #define BUFFSIZE 51
 #define FEEDBACKSIZE 4
-#define AUTHATTEMPTS 3 // must greater than 0
+#define AUTHATTEMPTS 3 /* maximum login attempts, must greater than 0 */
 
-#define IP_SERVERM "127.0.0.1"
-#define IP_SERVERC "127.0.0.1"
+#define IP_CLIENT "127.0.0.1"  /* client IP address */
+#define IP_SERVERM "127.0.0.1" /* serverM IP address */
+#define IP_SERVERC "127.0.0.1" /* serverM IP address */
 
-#define PORT_NUM_SERVERM_TCP 25448
-#define PORT_NUM_SERVERM_UDP 24448
-#define PORT_NUM_SERVERC_UDP 21448
+#define PORT_NUM_SERVERM_TCP 25448 /* serverM TCP port num */
+#define PORT_NUM_SERVERM_UDP 24448 /* serverM UDP port num */
+#define PORT_NUM_SERVERC_UDP 21448 /* serverC UDP port num */
 
 /* DataStructure: User Auth file */
 struct User_auth

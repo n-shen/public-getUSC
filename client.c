@@ -1,40 +1,40 @@
 #include "header.h"
 
-/* get client port number */
-int getMyPortNum(int sd, struct sockaddr_in my_address, socklen_t my_address_len)
-{
-
-    if (getsockname(sd, (struct sockaddr *)&my_address, &my_address_len) == -1)
-    {
-        perror("[Error] getsocket name");
-        exit(-1);
-    }
-
-    return ntohs(my_address.sin_port);
-}
-
+/*
+ * Function: initClient
+ * ----------------------------
+ *   Create client socket and bind with its IP addr
+ *
+ *   *sd: client socket descriptor
+ *
+ *   returns: the dynamic port number assigned to client
+ */
 int initClient(int *sd)
 {
-    struct sockaddr_in my_address;
+    *sd = socket(AF_INET, SOCK_STREAM, 0); /* initialize client socket descriptor */
 
-    /* create a client socket */
-    *sd = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in my_address; /* initialize client IP address */
+    socklen_t my_address_len = sizeof(my_address);
     my_address.sin_family = AF_INET;
-    my_address.sin_addr.s_addr = INADDR_ANY;
-    my_address.sin_port = 0; // assign client port dynamically
+    my_address.sin_addr.s_addr = inet_addr(IP_CLIENT);
+    my_address.sin_port = 0; /* assign client port dynamically */
 
-    /* client: bind socket and ip */
-    if (bind(*sd, (struct sockaddr *)&my_address, sizeof(my_address)) < 0)
+    /* bind client socket and ip */
+    if (bind(*sd, (struct sockaddr *)&my_address, my_address_len) < 0)
     {
-        perror("[Error] client binding error");
+        perror("[ERROR] client-binding error");
+        exit(-1);
+    }
+    printf("The client is up and running.\n"); /* on-screen message */
+
+    /* get client port number */
+    if (getsockname(*sd, (struct sockaddr *)&my_address, &my_address_len) == -1)
+    {
+        perror("[Error] client-getsocket name");
         exit(-1);
     }
 
-    /* on screen */
-    printf("The client is up and running.\n");
-
-    /* return client port number to main */
-    return getMyPortNum(*sd, my_address, sizeof(my_address));
+    return ntohs(my_address.sin_port); /* return client dynamic port number */
 }
 
 void connServerM(int *sd)
@@ -135,14 +135,18 @@ MAIN_SESSION:
     printf("Logged In.\n");
 }
 
+/*
+ * Function: Main
+ * ----------------------------
+ *  Client entry point
+ *  Initialize client and communicate with ServerM
+ */
 int main(int argc, char *argv[])
 {
-    int sd, my_port_num;
-    struct sockaddr_in my_address;
-
-    my_port_num = initClient(&sd);
-    connServerM(&sd);
-    commuServerM(&sd, my_port_num);
+    int sd, my_port_num;            /* client socket descriptor and client port number */
+    my_port_num = initClient(&sd);  /* initialize client TCP portal and get dynamic port number */
+    connServerM(&sd);               /* connect with serverM via TCP */
+    commuServerM(&sd, my_port_num); /* connect with serverM via TCP */
 
     return 0;
 }
