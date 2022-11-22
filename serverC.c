@@ -1,17 +1,23 @@
 #include "header.h"
 
+/*
+ * Function: initServerC
+ * ----------------------------
+ *   Create ServerC UDP socket and bind with its IP addr
+ *
+ *   *sd: serverM UDP socket descriptor
+ *
+ */
 void initServerC(int *sd)
 {
     struct sockaddr_in serverC_address;
-    /* Create serverM socket. */
-    *sd = socket(AF_INET, SOCK_DGRAM, 0);
+    *sd = socket(AF_INET, SOCK_DGRAM, 0); /* Create serverM socket. */
 
     serverC_address.sin_family = AF_INET;
     serverC_address.sin_port = htons(PORT_NUM_SERVERC_UDP);
     serverC_address.sin_addr.s_addr = INADDR_ANY;
 
-    /* Bind ServerC socket and IP. */
-    // check return code from bind
+    /* Bind ServerC socket and address. */
     if (bind(*sd, (struct sockaddr *)&serverC_address, sizeof(serverC_address)) < 0)
     {
         perror("serverC Warning: bind error");
@@ -21,6 +27,13 @@ void initServerC(int *sd)
     printf("The ServerC is up and running using UDP on port %d.\n", PORT_NUM_SERVERC_UDP);
 }
 
+/*
+ * Function: validateAuth
+ * ----------------------------
+ *   validate auth request
+ *
+ *   auth: server auth structure
+ */
 int validateAuth(struct User_auth auth)
 {
     /* file sys */
@@ -29,16 +42,17 @@ int validateAuth(struct User_auth auth)
     size_t len = 0;
     ssize_t read;
 
-    int code = 101;
+    int code = 101; /* feedback code */
     char *name, *psw;
 
-    fp = fopen("./cred.txt", "r");
+    fp = fopen("./cred.txt", "r"); /* open credential db */
     if (fp == NULL)
     {
         printf("[ERROR] cred.txt load failed.\n");
         exit(EXIT_FAILURE);
     }
 
+    /* check username and password */
     while (fgets(line, sizeof(line), fp) != NULL)
     {
         name = strtok(line, ",");
@@ -64,6 +78,13 @@ int validateAuth(struct User_auth auth)
     return code;
 }
 
+/*
+ * Function: commuServerM
+ * ----------------------------
+ *   Communicate with serverM
+ *
+ *   *sd: serverM socket descriptor for UDP
+ */
 void commuServerM(int *sd)
 {
     /* ServerM(my client) info init */
@@ -73,32 +94,32 @@ void commuServerM(int *sd)
     struct User_auth *buffer = malloc(sizeof(struct User_auth));
     char feedback[FEEDBACKSIZE];
 
-LOOP1:
-    /* ServerM(my client) recv */
+SESSION:
+    /* receive request from ServerM(my client) */
     rc = recvfrom(*sd, (struct User_auth *)buffer, (sizeof(*buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
     if (rc <= 0)
         perror("ServerC recv req failed");
     printf("The ServerC received an authentication request from the Main Server.\n");
-    /* Server - create upload report */
     printf("[Server Notice] From ServerM, username: %s, psw:%s.\n", buffer->userName, buffer->userPsw);
 
     sprintf(feedback, "%d", validateAuth(*buffer));
 
+    /* send auth result back to serverM */
     rc = sendto(*sd, (char *)feedback, FEEDBACKSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));
     if (rc <= 0)
         perror("ServerC send feedback failed");
 
     printf("The ServerC finished sending the response to the Main Server.\n");
 
-    goto LOOP1; /* repeat */
+    goto SESSION; /* repeat */
 }
 
 int main(int argc, char *argv[])
 {
     int sd; /* socket descriptor */
 
-    initServerC(&sd);
-    commuServerM(&sd);
+    initServerC(&sd);  /* initialize serverC */
+    commuServerM(&sd); /* communicate with serverM */
 
     return 0;
 }
