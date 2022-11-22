@@ -2,6 +2,14 @@
 
 void commuClient(int *sd_tcp, int *sd_udp);
 
+/*
+ * Function: initServerMUDP
+ * ----------------------------
+ *   Create ServerM UDP socket and bind with its IP addr IP_SERVERM
+ *
+ *   *sd_udp: serverM socket descriptor
+ *
+ */
 void initServerMUDP(int *sd_udp)
 {
     struct sockaddr_in serverM_UDP_address;
@@ -12,8 +20,7 @@ void initServerMUDP(int *sd_udp)
     serverM_UDP_address.sin_port = htons(PORT_NUM_SERVERM_UDP);
     serverM_UDP_address.sin_addr.s_addr = INADDR_ANY;
 
-    /* Bind ServerC socket and IP. */
-    // check return code from bind
+    /* bind and check return code from bind */
     if (bind(*sd_udp, (struct sockaddr *)&serverM_UDP_address, sizeof(serverM_UDP_address)) < 0)
     {
         perror("serverM Warning: UDP bind error");
@@ -21,20 +28,27 @@ void initServerMUDP(int *sd_udp)
     }
 }
 
-void initServerMTCP(int *sd)
+/*
+ * Function: initServerMTCP
+ * ----------------------------
+ *   Create ServerM TCP socket and bind with its IP addr IP_SERVERM
+ *
+ *   *sd_tcp: serverM socket descriptor
+ *
+ */
+void initServerMTCP(int *sd_tcp)
 {
     struct sockaddr_in serverM_address;
 
     /* Create serverM socket. */
-    *sd = socket(AF_INET, SOCK_STREAM, 0);
+    *sd_tcp = socket(AF_INET, SOCK_STREAM, 0);
 
     serverM_address.sin_family = AF_INET;
     serverM_address.sin_port = htons(PORT_NUM_SERVERM_TCP);
     serverM_address.sin_addr.s_addr = INADDR_ANY;
 
-    /* Bind ServerM socket and IP. */
-    // check return code from bind
-    if (bind(*sd, (struct sockaddr *)&serverM_address, sizeof(serverM_address)) < 0)
+    /* Bind and check return code from bind */
+    if (bind(*sd_tcp, (struct sockaddr *)&serverM_address, sizeof(serverM_address)) < 0)
     {
         perror("serverM Warning: bind error");
         exit(-1);
@@ -43,32 +57,53 @@ void initServerMTCP(int *sd)
     printf("The main server is up and running.\n");
 }
 
-/* Server - Receive client's Auth input */
+/*
+ * Function: recvUserAuth
+ * ----------------------------
+ *   Receive client's Auth request via TCP
+ *
+ *   *sd_tcp: serverM socket descriptor for TCP
+ *   *sd_udp: serverM socket descriptor for UDP
+ *   *connected_sd_tcp: connect socket descriptor between client and serverM
+ *   *userAuth: user auth structure
+ */
 void recvUserAuth(int *sd_tcp, int *sd_udp, int *connected_sd_tcp, struct User_auth *userAuth)
 {
     int sizeOfUserAuth = sizeof(struct User_auth);
     struct User_auth *buffer = malloc(sizeOfUserAuth);
 
-    /* read size and buffer */
-    if (read(*connected_sd_tcp, buffer, ntohs(sizeOfUserAuth)) <= 0)
+    if (read(*connected_sd_tcp, buffer, ntohs(sizeOfUserAuth)) <= 0) /* read size and buffer */
     {
-        printf("\n/*-------- Clinet disconneted! Waiting new clients... -----------*/\n");
-        commuClient(sd_tcp, sd_udp);
+        printf("\n$------- Clinet disconneted! Waiting new clients... ----------$\n");
+        commuClient(sd_tcp, sd_udp); /* wait for new client */
     }
-
-    /* Server - return result */
-    memcpy(userAuth, buffer, sizeOfUserAuth);
+    memcpy(userAuth, buffer, sizeOfUserAuth); /* save result*/
 }
 
-void sendUserAuthFeedback(int *connected_sd, char *fbCode)
+/*
+ * Function: sendUserAuthFeedback
+ * ----------------------------
+ *   Reply client's Auth feedback via TCP
+ *
+ *   *connected_sd_tcp: connect socket descriptor between client and serverM
+ *   *fbCode: feedback code
+ */
+void sendUserAuthFeedback(int *connected_sd_tcp, char *fbCode)
 {
     /* Send the size of input(string) to the server */
-    if (write(*connected_sd, fbCode, sizeof(int)) < 0)
+    if (write(*connected_sd_tcp, fbCode, sizeof(int)) < 0)
         perror("User Auth Feedback sent failed");
     printf("The main server sent the authentication result to client.\n");
 }
 
-/* encrypt auth */
+/*
+ * Function: encryptAuth
+ * ----------------------------
+ *   Encrypt client's Auth
+ *
+ *   *userAuth: user auth structure
+ *
+ */
 void encryptAuth(char *userAuth)
 {
     char tmp[BUFFSIZE];
@@ -89,6 +124,16 @@ void encryptAuth(char *userAuth)
     strncpy(userAuth, tmp, BUFFSIZE);
 }
 
+/*
+ * Function: verifyAuth
+ * ----------------------------
+ *   Verify client's Auth with ServerC via TCP
+ *
+ *   *newUser: user auth structure
+ *   *feedback: feedback code
+ *   *sd_udp: serverM socket descriptor for UDP
+ *   *address_ServerC: serverC address
+ */
 void verifyAuth(struct User_auth *newUser, char *feedback, int *sd_udp, struct sockaddr_in *address_ServerC)
 {
     /* UDP: ServerC(my server) info init */
@@ -111,22 +156,39 @@ void verifyAuth(struct User_auth *newUser, char *feedback, int *sd_udp, struct s
     printf("The main server received the result of the authentication request from ServerC using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
 }
 
+/*
+ * Function: authProcess
+ * ----------------------------
+ *   Auth: Receive, verify through serverC, and send feedback to client.
+ *
+ *   *sd_tcp: serverM socket descriptor for TCP
+ *   *connected_sd_tcp: connect socket descriptor between client and serverM
+ *   *sd_udp: serverM socket descriptor for UDP
+ *   *address_ServerC: serverC address
+ */
 void authProcess(int *sd_tcp, int *connected_sd_tcp, int *sd_udp, struct sockaddr_in *address_ServerC)
 {
     struct User_auth newUser;
-    char fbCode[FEEDBACKSIZE];
+    char fbCode[FEEDBACKSIZE]; /* feedback code */
 
-    recvUserAuth(sd_tcp, sd_udp, connected_sd_tcp, &newUser);
+    recvUserAuth(sd_tcp, sd_udp, connected_sd_tcp, &newUser); /* receive user Auth request from client */
     printf("Received Auth: [%s,%s]\n", newUser.userName, newUser.userPsw);
     printf("The main server received the authentication for %s using TCP over port %d.\n", newUser.userName, PORT_NUM_SERVERM_TCP);
 
-    verifyAuth(&newUser, fbCode, sd_udp, address_ServerC);
-    /* send feedback to client via TCP */
-    if (write(*connected_sd_tcp, fbCode, sizeof(fbCode)) < 0)
+    verifyAuth(&newUser, fbCode, sd_udp, address_ServerC);    /* verify auth via serverC */
+    if (write(*connected_sd_tcp, fbCode, sizeof(fbCode)) < 0) /* send feedback to client via TCP */
         perror("User Auth Feedback sent failed");
     printf("The main server sent the authentication result to client.\n");
 }
 
+/*
+ * Function: connectServerC
+ * ----------------------------
+ *   Connect to serverC via UDP
+ *
+ *   *server_address: serverC address
+ *
+ */
 void connectServerC(struct sockaddr_in *server_address)
 {
     /* connect to server */
@@ -135,23 +197,26 @@ void connectServerC(struct sockaddr_in *server_address)
     server_address->sin_addr.s_addr = INADDR_ANY;
 }
 
+/*
+ * Function: commuClient
+ * ----------------------------
+ *   Communicate with client, one client per session
+ *
+ *   *sd_tcp: serverM socket descriptor for TCP
+ *   *sd_udp: serverM socket descriptor for UDP
+ */
 void commuClient(int *sd_tcp, int *sd_udp)
 {
-    /* TCP var */
-    int connected_sd_tcp, connected_client_port;
-    struct sockaddr_in client_address;
-    socklen_t client_address_len;
+    int connected_sd_tcp;
+    struct sockaddr_in address_client, address_ServerC;
+    socklen_t address_client_len;
 
-    /* LOOP1 - TCP listen to incoming client, limit: one student */
-    listen(*sd_tcp, 1);
-    connected_sd_tcp = accept(*sd_tcp, (struct sockaddr *)&client_address, &client_address_len);
+    listen(*sd_tcp, 1);                                                                          /* TCP listen to incoming client, limit to one student per session */
+    connected_sd_tcp = accept(*sd_tcp, (struct sockaddr *)&address_client, &address_client_len); /* accept to client's request */
+    connectServerC(&address_ServerC);                                                            /* connect to serverC */
 
-    struct sockaddr_in address_ServerC;
-    connectServerC(&address_ServerC);
-
-/* LOOP2 - receive message from connected clients */
-CP_SESSION:
-    authProcess(sd_tcp, &connected_sd_tcp, sd_udp, &address_ServerC);
+CP_SESSION:                                                           /* LOOP - receive message from connected clients */
+    authProcess(sd_tcp, &connected_sd_tcp, sd_udp, &address_ServerC); /* process authentication */
 
     goto CP_SESSION;
 }
@@ -160,9 +225,9 @@ int main(int argc, char *argv[])
 {
     int sd_tcp, sd_udp; /* socket descriptor */
 
-    initServerMTCP(&sd_tcp);
+    initServerMTCP(&sd_tcp); /* initialize server */
     initServerMUDP(&sd_udp);
-    commuClient(&sd_tcp, &sd_udp);
+    commuClient(&sd_tcp, &sd_udp); /* communicate with client */
 
     return 0;
 }
