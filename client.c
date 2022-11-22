@@ -114,8 +114,12 @@ void sendUserAuth(int *sd, struct User_auth *newUser)
 void recvUserAuthFeedback(int sd, int my_port_num, char *userName, int *authAttempts)
 {
     char authFeedback[FEEDBACKSIZE];
-    if (read(sd, &authFeedback, sizeof(authFeedback)) <= 0) /* receive the auth feedback from serverM */
-        perror("Auth Feedback received failed");
+    /* receive the auth feedback from serverM */
+    if (read(sd, &authFeedback, sizeof(authFeedback)) <= 0)
+    {
+        printf("Auth Feedback received failed, try to connect server later.\n");
+        exit(-1);
+    }
     printf("%s received the result of authentication using TCP over port %d. ", userName, my_port_num);
 
     switch (atoi(authFeedback))
