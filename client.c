@@ -147,6 +147,45 @@ void recvUserAuthFeedback(int sd, int my_port_num, char *userName, int *authAtte
 }
 
 /*
+ * Function: askUserAuth
+ * ----------------------------
+ *   Ask user for authentication input
+ *
+ *   *userAuth: user authentication profile field (e.x. userName or userPsw)
+ *   type: 1-course, 0-category
+ */
+void askUserQuery(char *userQuery, int type)
+{
+    char buffer[BUFFSIZE];
+    (type) ? (printf("Please enter the course code to query: ")) : (printf("Please enter the category (Credit/Professor/Days/CourseName): "));
+    fflush(stdout);
+    fgets(buffer, sizeof(buffer), stdin); /* retrieve user input from console */
+    buffer[strcspn(buffer, "\n")] = 0;
+    strcpy(userQuery, buffer);
+}
+
+/*
+ * Function: sendUserQuery
+ * ----------------------------
+ *   Send user query request to ServerM
+ *
+ *   *sd: client socket descriptor
+ *   *newQuery: user Auth profile
+ */
+void userQuery(int *sd, struct User_auth newUser)
+{
+    struct User_query newQuery;
+    askUserQuery(newQuery.course, 1);   /* ask user for coursecode */
+    askUserQuery(newQuery.category, 0); /* ask user for category */
+
+    /* Send user query to the serverM via TCP */
+    if (write(*sd, (struct User_query *)&newQuery, sizeof(struct User_query)) < 0)
+        perror("QueryRequest send failed");
+    printf("%s sent a request to the main server.\n", newUser.userName); /* on-screen message */
+    printf("The %s of %s is XXX.\n", newQuery.category, newQuery.course);
+}
+
+/*
  * Function: commuServerM
  * ----------------------------
  *  Client main chanel with ServerM
@@ -174,8 +213,11 @@ AUTH_SESSION:                   /* AUTH_SESSION: process authentication request 
         goto MAIN_SESSION;
     goto AUTH_SESSION; /* if auth is NOT successful, repeat AUTH_SESSION */
 
-MAIN_SESSION: /* MAIN_SESSION: major tasks */
-    printf("Logged In.\n");
+MAIN_SESSION: /* MAIN_SESSION: major query tasks */
+    // printf("Logged In.\n");
+    userQuery(sd, newUser);
+    printf("\n-----Start a new request-----\n");
+    goto MAIN_SESSION;
 }
 
 /*

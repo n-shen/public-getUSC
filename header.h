@@ -24,3 +24,10 @@ struct User_auth
     char userName[BUFFSIZE];
     char userPsw[BUFFSIZE];
 };
+
+/* DataStructure: User Query file */
+struct User_query
+{
+    char course[BUFFSIZE];
+    char category[BUFFSIZE];
+};

@@ -166,12 +166,13 @@ void verifyAuth(struct User_auth *newUser, char *feedback, int *sd_udp, struct s
  *   *sd_udp: serverM socket descriptor for UDP
  *   *address_ServerC: serverC address
  */
-void authProcess(int *sd_tcp, int *connected_sd_tcp, int *sd_udp, struct sockaddr_in *address_ServerC)
+int authProcess(int *sd_tcp, int *connected_sd_tcp, int *sd_udp, struct sockaddr_in *address_ServerC, char *userName)
 {
     struct User_auth newUser;
     char fbCode[FEEDBACKSIZE]; /* feedback code */
 
     recvUserAuth(sd_tcp, sd_udp, connected_sd_tcp, &newUser); /* receive user Auth request from client */
+    strncpy(userName, newUser.userName, BUFFSIZE);
     printf("Received Auth: [%s,%s]\n", newUser.userName, newUser.userPsw);
     printf("The main server received the authentication for %s using TCP over port %d.\n", newUser.userName, PORT_NUM_SERVERM_TCP);
 
@@ -179,6 +180,8 @@ void authProcess(int *sd_tcp, int *connected_sd_tcp, int *sd_udp, struct sockadd
     if (write(*connected_sd_tcp, fbCode, sizeof(fbCode)) < 0) /* send feedback to client via TCP */
         perror("User Auth Feedback sent failed");
     printf("The main server sent the authentication result to client.\n");
+
+    return atoi(fbCode);
 }
 
 /*
@@ -197,6 +200,28 @@ void connectServerC(struct sockaddr_in *server_address)
     server_address->sin_addr.s_addr = INADDR_ANY;
 }
 
+void recvUserQuery(int *sd_tcp, int *sd_udp, int *connected_sd_tcp, struct User_query *userQuery)
+{
+    int sizeOfUserQuery = sizeof(struct User_query);
+    struct User_query *buffer = malloc(sizeOfUserQuery);
+
+    if (read(*connected_sd_tcp, buffer, ntohs(sizeOfUserQuery)) <= 0) /* read size and buffer */
+    {
+        printf("\n$------- Clinet disconneted! Waiting new clients... ----------$\n");
+        commuClient(sd_tcp, sd_udp); /* wait for new client */
+    }
+    memcpy(userQuery, buffer, sizeOfUserQuery); /* save result*/
+}
+
+void queryProcess(int *sd_tcp, int *sd_udp, int *connected_sd_tcp, char *userName)
+{
+    struct User_query newQuery;
+    char fbCode[FEEDBACKSIZE]; /* feedback code */
+
+    recvUserQuery(sd_tcp, sd_udp, connected_sd_tcp, &newQuery); /* receive user query request from client */
+    printf("The main server received from %s to query course %s about %s using TCP over port %d.\n", userName, newQuery.course, newQuery.category, PORT_NUM_SERVERM_TCP);
+}
+
 /*
  * Function: commuClient
  * ----------------------------
@@ -210,15 +235,22 @@ void commuClient(int *sd_tcp, int *sd_udp)
     int connected_sd_tcp;
     struct sockaddr_in address_client, address_ServerC;
     socklen_t address_client_len;
+    char userName[BUFFSIZE];
 
     listen(*sd_tcp, 1);                                                                          /* TCP listen to incoming client, limit to one student per session */
     connected_sd_tcp = accept(*sd_tcp, (struct sockaddr *)&address_client, &address_client_len); /* accept to client's request */
     connectServerC(&address_ServerC);                                                            /* connect to serverC */
 
-CP_SESSION:                                                           /* LOOP - receive message from connected clients */
-    authProcess(sd_tcp, &connected_sd_tcp, sd_udp, &address_ServerC); /* process authentication */
+AUTH_SESSION:
+    if (authProcess(sd_tcp, &connected_sd_tcp, sd_udp, &address_ServerC, userName) == 103) /* LOOP - receive message from connected clients */
+        goto MAIN_SESSION;
+    else
+        goto AUTH_SESSION;
 
-    goto CP_SESSION;
+MAIN_SESSION:
+    // printf("entered main session by %s. \n", userName);
+    queryProcess(sd_tcp, sd_udp, &connected_sd_tcp, userName);
+    goto MAIN_SESSION;
 }
 
 int main(int argc, char *argv[])
