@@ -147,11 +147,11 @@ void recvUserAuthFeedback(int sd, int my_port_num, char *userName, int *authAtte
 }
 
 /*
- * Function: askUserAuth
+ * Function: askUserQuery
  * ----------------------------
- *   Ask user for authentication input
+ *   Ask user for query input
  *
- *   *userAuth: user authentication profile field (e.x. userName or userPsw)
+ *   *userQuery: user query request field (e.x. course code or category)
  *   type: 1-course, 0-category
  */
 void askUserQuery(char *userQuery, int type)
@@ -165,14 +165,14 @@ void askUserQuery(char *userQuery, int type)
 }
 
 /*
- * Function: sendUserQuery
+ * Function: userQuery
  * ----------------------------
- *   Send user query request to ServerM
+ *   Process user query request with ServerM
  *
  *   *sd: client socket descriptor
- *   *newQuery: user Auth profile
+ *   *userName: user name
  */
-void userQuery(int *sd, struct User_auth newUser)
+void userQuery(int *sd, char *userName)
 {
     struct User_query newQuery;
     askUserQuery(newQuery.course, 1);   /* ask user for coursecode */
@@ -181,7 +181,7 @@ void userQuery(int *sd, struct User_auth newUser)
     /* Send user query to the serverM via TCP */
     if (write(*sd, (struct User_query *)&newQuery, sizeof(struct User_query)) < 0)
         perror("QueryRequest send failed");
-    printf("%s sent a request to the main server.\n", newUser.userName); /* on-screen message */
+    printf("%s sent a request to the main server.\n", userName); /* on-screen message */
     printf("The %s of %s is XXX.\n", newQuery.category, newQuery.course);
 }
 
@@ -213,9 +213,8 @@ AUTH_SESSION:                   /* AUTH_SESSION: process authentication request 
         goto MAIN_SESSION;
     goto AUTH_SESSION; /* if auth is NOT successful, repeat AUTH_SESSION */
 
-MAIN_SESSION: /* MAIN_SESSION: major query tasks */
-    // printf("Logged In.\n");
-    userQuery(sd, newUser);
+MAIN_SESSION:                        /* MAIN_SESSION: major query tasks */
+    userQuery(sd, newUser.userName); /* process user query */
     printf("\n-----Start a new request-----\n");
     goto MAIN_SESSION;
 }
