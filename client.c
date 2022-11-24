@@ -178,6 +178,11 @@ void userQuery(int *sd, char *userName)
     askUserQuery(newQuery.course, 1);   /* ask user for coursecode */
     askUserQuery(newQuery.category, 0); /* ask user for category */
 
+    for (int i = 0; newQuery.category[i]; i++)
+        newQuery.category[i] = tolower(newQuery.category[i]);
+    for (int i = 0; newQuery.course[i]; i++)
+        newQuery.course[i] = toupper(newQuery.course[i]);
+
     /* Send user query to the serverM via TCP */
     if (write(*sd, (struct User_query *)&newQuery, sizeof(struct User_query)) < 0)
         perror("QueryRequest send failed");

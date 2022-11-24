@@ -28,54 +28,55 @@ void initServerEE(int *sd)
 }
 
 /*
- * Function: validateAuth
+ * Function: retrieveData
  * ----------------------------
  *   validate auth request
  *
  *   auth: server auth structure
  */
-int validateAuth(struct User_auth auth)
+void retrieveData(struct User_query query, char *result)
 {
     /* file sys */
     FILE *fp;
-    char line[BUFFSIZE * 2 + 1];
+    char line[COURSEINFOSIZE];
     size_t len = 0;
-    ssize_t read;
+    char *code, *credit, *professor, *days, *name;
+    int found = 0;
 
-    int code = 101; /* feedback code */
-    char *name, *psw;
-
-    fp = fopen("./cred.txt", "r"); /* open credential db */
+    fp = fopen("./ee.txt", "r"); /* open credential db */
     if (fp == NULL)
     {
-        printf("[ERROR] cred.txt load failed.\n");
+        printf("[ERROR] ee.txt load failed.\n");
         exit(EXIT_FAILURE);
     }
 
     /* check username and password */
     while (fgets(line, sizeof(line), fp) != NULL)
     {
-        name = strtok(line, ",");
-        if (strcmp(name, auth.userName) == 0)
+        code = strtok(line, ",");
+        if (strcmp(code, query.course) == 0)
         {
-            code += 1;
-            psw = strtok(NULL, ",");
-            if (psw[strlen(psw) - 1] == '\n')
+            found = 1;
+            credit = strtok(NULL, ",");
+            if (strcmp("credit", query.category) == 0)
             {
-                psw[strcspn(psw, "\n")] = 0;
-                psw[strlen(psw) - 1] = '\0';
+                strcpy(result, credit);
+                break;
             }
 
-            if (strcmp(psw, auth.userPsw) == 0)
-                code += 1;
-            printf("psw passed: %s.\n", psw);
-            break;
+            professor = strtok(NULL, ",");
+            if (strcmp("professor", query.category) == 0)
+            {
+                strcpy(result, professor);
+                break;
+            }
         }
     }
 
-    fclose(fp); /* close file */
+    if (!found)
+        strcpy(result, "Didn't find the course.");
 
-    return code;
+    fclose(fp); /* close file */
 }
 
 /*
@@ -104,7 +105,7 @@ SESSION:
     printf("The ServerEE received a request from the Main Server about %s of %s.\n", buffer->category, buffer->course);
 
     /* retrieve course info */
-    strncpy(result, "Didn't find the course.", QUERYRESULTSIZE);
+    retrieveData(*buffer, result);
 
     /* send query result back to serverM */
     rc = sendto(*sd, (char *)result, QUERYRESULTSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));

@@ -240,6 +240,7 @@ void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char 
     else
     {
         printf("Invalid course format!\n");
+        return;
     }
 
     /* recv verification feedback from serverC */
@@ -266,7 +267,7 @@ void queryProcess(struct ServerM *serverM_API, char *userName)
     recvUserQuery(serverM_API, &newQuery); /* receive user query request from client */
     printf("The main server received from %s to query course %s about %s using TCP over port %d.\n", userName, newQuery.course, newQuery.category, PORT_NUM_SERVERM_TCP);
     retrieveCourse(serverM_API, &newQuery, result);
-    printf("Received result: %s\n", result);
+    printf("Received query result: %s.\n", result);
 }
 
 /*

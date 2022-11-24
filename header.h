@@ -5,10 +5,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
+#include <ctype.h>
 
 #define BUFFSIZE 51
 #define FEEDBACKSIZE 4
-#define QUERYRESULTSIZE 1024
+#define QUERYRESULTSIZE 256
+#define COURSEINFOSIZE 1280
 #define AUTHATTEMPTS 3 /* maximum login attempts, must greater than 0 */
 
 #define IP_CLIENT "127.0.0.1"  /* client IP address */
