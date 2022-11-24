@@ -72,6 +72,21 @@ void bindServerC(struct sockaddr_in *server_address)
 }
 
 /*
+ * Function: bindServerEE
+ * ----------------------------
+ *   Bind with serverC via UDP
+ *
+ *   *server_address: serverC address
+ */
+void bindServerEE(struct sockaddr_in *server_address)
+{
+    /* bind with serverEE */
+    server_address->sin_family = AF_INET;
+    server_address->sin_port = htons(PORT_NUM_SERVEREE_UDP);
+    server_address->sin_addr.s_addr = INADDR_ANY;
+}
+
+/*
  * Function: recvUserAuth
  * ----------------------------
  *   Receive client's Auth request via TCP
@@ -200,6 +215,42 @@ void recvUserQuery(struct ServerM *serverM_API, struct User_query *userQuery)
 }
 
 /*
+ * Function: retrieveCourse
+ * ----------------------------
+ *   Verify client's Auth with ServerC via TCP
+ *
+ *   *serverM_API: serverM API
+ *   *newUser: user auth structure
+ *   *feedback: feedback code
+ */
+void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char *result)
+{
+    /* UDP: serverEE and serverCS info init */
+    int rc;
+    socklen_t serverEE_address_len;
+    socklen_t serverCS_address_len;
+
+    /* encrypt auth */
+    if (strncmp(query->course, "EE", 2) == 0)
+    {
+        if (sendto(serverM_API->sd_udp, (struct User_query *)query, (1024 + sizeof(query)), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, sizeof(serverM_API->addr_ServerEE)) <= 0)
+            perror("UDP send user query request failed");
+        printf("The main server sent a request to serverEE.\n");
+    }
+    else
+    {
+        printf("Invalid course format!\n");
+    }
+
+    /* recv verification feedback from serverC */
+    rc = recvfrom(serverM_API->sd_udp, (char *)result, QUERYRESULTSIZE, MSG_WAITALL, (struct sockaddr *)&serverM_API->addr_ServerEE, &serverEE_address_len);
+    if (rc <= 0)
+        perror("ServerM recv feedback failed");
+    result[rc] = '\0';
+    printf("The main server received the response from ServerEE using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
+}
+
+/*
  * Function: queryProcess
  * ----------------------------
  *   Query: Receive, retrieve through serverEE/severCS, and send result to client.
@@ -210,10 +261,12 @@ void recvUserQuery(struct ServerM *serverM_API, struct User_query *userQuery)
 void queryProcess(struct ServerM *serverM_API, char *userName)
 {
     struct User_query newQuery;
-    char fbCode[FEEDBACKSIZE]; /* feedback code */
+    char result[QUERYRESULTSIZE]; /* feedback code */
 
     recvUserQuery(serverM_API, &newQuery); /* receive user query request from client */
     printf("The main server received from %s to query course %s about %s using TCP over port %d.\n", userName, newQuery.course, newQuery.category, PORT_NUM_SERVERM_TCP);
+    retrieveCourse(serverM_API, &newQuery, result);
+    printf("Received result: %s\n", result);
 }
 
 /*
@@ -248,8 +301,9 @@ int main(int argc, char *argv[])
 
     initServerMTCP(&serverM_API.sd_tcp); /* initialize server */
     initServerMUDP(&serverM_API.sd_udp);
-    bindServerC(&serverM_API.addr_ServerC); /* bind with serverC */
-    commuClient(&serverM_API);              /* communicate with client */
+    bindServerC(&serverM_API.addr_ServerC);   /* bind with serverC */
+    bindServerEE(&serverM_API.addr_ServerEE); /* bind with serverEE */
+    commuClient(&serverM_API);                /* communicate with client */
 
     return 0;
 }
