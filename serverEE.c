@@ -17,10 +17,10 @@ void initServerEE(int *sd)
     serverEE_address.sin_port = htons(PORT_NUM_SERVEREE_UDP);
     serverEE_address.sin_addr.s_addr = INADDR_ANY;
 
-    /* Bind ServerC socket and address. */
+    /* Bind ServerEE socket and address. */
     if (bind(*sd, (struct sockaddr *)&serverEE_address, sizeof(serverEE_address)) < 0)
     {
-        perror("serverC Warning: bind error");
+        perror("serverEE Warning: bind error");
         exit(-1);
     }
 
@@ -30,9 +30,10 @@ void initServerEE(int *sd)
 /*
  * Function: retrieveData
  * ----------------------------
- *   validate auth request
+ *   retrieve course info from db
  *
- *   auth: server auth structure
+ *   query: client query request
+ *   *result: query result
  */
 void retrieveData(struct User_query query, char *result)
 {
@@ -41,7 +42,7 @@ void retrieveData(struct User_query query, char *result)
     char line[COURSEINFOSIZE];
     size_t len = 0;
     char *code, *credit, *professor, *days, *name;
-    int found = 0;
+    int found = -1;
 
     fp = fopen("./ee.txt", "r"); /* open credential db */
     if (fp == NULL)
@@ -70,11 +71,33 @@ void retrieveData(struct User_query query, char *result)
                 strcpy(result, professor);
                 break;
             }
+
+            days = strtok(NULL, ",");
+            if (strcmp("days", query.category) == 0)
+            {
+                strcpy(result, days);
+                break;
+            }
+
+            name = strtok(NULL, ",");
+            if (strcmp("coursename", query.category) == 0)
+            {
+                if (name[strlen(name) - 1] == '\n')
+                {
+                    name[strcspn(name, "\n")] = 0;
+                    name[strlen(name) - 1] = '\0';
+                }
+                strcpy(result, name);
+                break;
+            }
+            found = 0;
         }
     }
 
-    if (!found)
-        strcpy(result, "Didn't find the course.");
+    if (found == -1)
+        strcpy(result, "Didn't find the course");
+    if (found == 0)
+        strcpy(result, "Invalid category");
 
     fclose(fp); /* close file */
 }
@@ -100,7 +123,7 @@ SESSION:
     rc = recvfrom(*sd, (struct User_auth *)buffer, (sizeof(*buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
     if (rc <= 0)
     {
-        perror("ServerEE recv req failed");
+        perror("ServerEE receiving request failed");
     }
     printf("The ServerEE received a request from the Main Server about %s of %s.\n", buffer->category, buffer->course);
 
