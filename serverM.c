@@ -74,15 +74,30 @@ void bindServerC(struct sockaddr_in *server_address)
 /*
  * Function: bindServerEE
  * ----------------------------
- *   Bind with serverC via UDP
+ *   Bind with serverEE via UDP
  *
- *   *server_address: serverC address
+ *   *server_address: serverEE address
  */
 void bindServerEE(struct sockaddr_in *server_address)
 {
     /* bind with serverEE */
     server_address->sin_family = AF_INET;
     server_address->sin_port = htons(PORT_NUM_SERVEREE_UDP);
+    server_address->sin_addr.s_addr = INADDR_ANY;
+}
+
+/*
+ * Function: bindServerCS
+ * ----------------------------
+ *   Bind with serverCS via UDP
+ *
+ *   *server_address: serverCS address
+ */
+void bindServerCS(struct sockaddr_in *server_address)
+{
+    /* bind with serverEE */
+    server_address->sin_family = AF_INET;
+    server_address->sin_port = htons(PORT_NUM_SERVERCS_UDP);
     server_address->sin_addr.s_addr = INADDR_ANY;
 }
 
@@ -237,10 +252,24 @@ void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char 
         /* recv verification feedback from serverEE */
         rc = recvfrom(serverM_API->sd_udp, (char *)result, QUERYRESULTSIZE, MSG_WAITALL, (struct sockaddr *)&serverM_API->addr_ServerEE, &serverEE_address_len);
         if (rc <= 0)
-            perror("[ERROR] ServerM receive query result failed");
+            perror("[ERROR] ServerM receive query result from serverEE failed");
         result[rc] = '\0';
         printf("The main server received the response from ServerEE using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
     }
+    else if (strncmp(query->course, "CS", 2) == 0) /* CS server */
+    {
+        if (sendto(serverM_API->sd_udp, (struct User_query *)query, (1024 + sizeof(query)), 0, (struct sockaddr *)&serverM_API->addr_ServerCS, sizeof(serverM_API->addr_ServerCS)) <= 0)
+            perror("[ERROR] UDP send user query request failed");
+        printf("The main server sent a request to serverCS.\n");
+        /* recv verification feedback from serverCS */
+        rc = recvfrom(serverM_API->sd_udp, (char *)result, QUERYRESULTSIZE, MSG_WAITALL, (struct sockaddr *)&serverM_API->addr_ServerCS, &serverCS_address_len);
+        if (rc <= 0)
+            perror("[ERROR] ServerM receive query result from serverCS failed");
+        result[rc] = '\0';
+        printf("The main server received the response from ServerCS using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
+    }
+    else
+        strcpy(result, "Didn't find the course!");
 }
 
 /*
@@ -299,6 +328,7 @@ int main(int argc, char *argv[])
     initServerMUDP(&serverM_API.sd_udp);
     bindServerC(&serverM_API.addr_ServerC);   /* bind with serverC */
     bindServerEE(&serverM_API.addr_ServerEE); /* bind with serverEE */
+    bindServerCS(&serverM_API.addr_ServerCS); /* bind with serverCS */
     commuClient(&serverM_API);                /* communicate with client */
 
     return 0;

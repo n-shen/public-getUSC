@@ -127,13 +127,13 @@ void recvUserAuthFeedback(int sd, int my_port_num, char *userName, int *authAtte
     case 101:
         *authAttempts -= 1;
         printf("Authentication failed: Username does not exist\n");
-        printf("Attempts remaining:%d\n", *authAttempts);
+        printf("\nAttempts remaining:%d\n", *authAttempts);
         break;
 
     case 102:
         *authAttempts -= 1;
         printf("Authentication failed: Password does not match\n");
-        printf("Attempts remaining:%d\n", *authAttempts);
+        printf("\nAttempts remaining:%d\n", *authAttempts);
         break;
 
     case 103:
@@ -203,7 +203,7 @@ void userQuery(int *sd, char *userName, int myportnum)
 
     if (strcmp("Invalid Category!", result) == 0)
     {
-        printf("Invalid Course Category!\n"); /* on-screen message */
+        printf("Invalid Course Category: %s.\n", newQuery.category); /* on-screen message */
     }
     else if (strcmp("Didn't find the course!", result) == 0)
     {

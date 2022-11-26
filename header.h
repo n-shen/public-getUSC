@@ -17,9 +17,11 @@
 #define IP_SERVERM "127.0.0.1" /* serverM IP address */
 #define IP_SERVERC "127.0.0.1" /* serverM IP address */
 
-#define PORT_NUM_SERVERM_TCP 25448  /* serverM TCP port num */
-#define PORT_NUM_SERVERM_UDP 24448  /* serverM UDP port num */
+#define PORT_NUM_SERVERM_TCP 25448 /* serverM TCP port num */
+#define PORT_NUM_SERVERM_UDP 24448 /* serverM UDP port num */
+
 #define PORT_NUM_SERVERC_UDP 21448  /* serverC UDP port num */
+#define PORT_NUM_SERVERCS_UDP 22448 /* serverCS UDP port num */
 #define PORT_NUM_SERVEREE_UDP 23448 /* serverEE UDP port num */
 
 /* DataStructure: ServerM_API */
