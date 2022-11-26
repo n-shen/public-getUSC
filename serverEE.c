@@ -6,7 +6,6 @@
  *   Create ServerEE UDP socket and bind with its IP addr
  *
  *   *sd: serverM UDP socket descriptor
- *
  */
 void initServerEE(int *sd)
 {
@@ -20,7 +19,7 @@ void initServerEE(int *sd)
     /* Bind ServerEE socket and address. */
     if (bind(*sd, (struct sockaddr *)&serverEE_address, sizeof(serverEE_address)) < 0)
     {
-        perror("serverEE Warning: bind error");
+        perror("[ERROR] serverEE bind error");
         exit(-1);
     }
 
@@ -48,7 +47,7 @@ void retrieveData(struct User_query query, char *result)
     if (fp == NULL)
     {
         printf("[ERROR] ee.txt load failed.\n");
-        exit(EXIT_FAILURE);
+        exit(-1);
     }
 
     /* check username and password */
@@ -105,7 +104,11 @@ void retrieveData(struct User_query query, char *result)
     }
 
     if (found == 0)
+    {
         strcpy(result, "Invalid Category!");
+        printf("Invalid Category: %s.\n", query.category); /* on-screen message */
+    }
+
     fclose(fp); /* close file */
 }
 
@@ -130,7 +133,8 @@ SESSION:
     rc = recvfrom(*sd, (struct User_auth *)buffer, (sizeof(*buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
     if (rc <= 0)
     {
-        perror("ServerEE receiving request failed");
+        perror("[ERROR] ServerEE receiving request failed");
+        exit(-1);
     }
     printf("The ServerEE received a request from the Main Server about %s of %s.\n", buffer->category, buffer->course); /* on-screen message */
 
@@ -140,7 +144,10 @@ SESSION:
     /* send query result back to serverM */
     rc = sendto(*sd, (char *)result, QUERYRESULTSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));
     if (rc <= 0)
-        perror("ServerEE send feedback failed");
+    {
+        perror("[ERROR] ServerEE send feedback failed");
+        exit(-1);
+    }
     printf("The ServerEE finished sending the response to the Main Server.\n"); /* on-screen message */
 
     goto SESSION; /* repeat */
@@ -148,8 +155,7 @@ SESSION:
 
 int main(int argc, char *argv[])
 {
-    int sd; /* socket descriptor */
-
+    int sd;            /* socket descriptor */
     initServerEE(&sd); /* initialize serverC */
     commuServerM(&sd); /* communicate with serverM */
 

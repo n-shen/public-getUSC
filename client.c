@@ -95,7 +95,7 @@ void sendUserAuth(int *sd, struct User_auth *newUser)
 
     /* Send user authentication to the serverM via TCP */
     if (write(*sd, (struct User_auth *)newUser, sizeof(struct User_auth)) < 0)
-        perror("AuthReq send failed");
+        perror("[ERROR] AuthReq send failed");
     printf("%s sent an authentication request to the main server.\n", newUser->userName); /* on-screen message */
 }
 
@@ -187,12 +187,16 @@ void userQuery(int *sd, char *userName, int myportnum)
 
     /* Send user query to the serverM via TCP */
     if (write(*sd, (struct User_query *)&newQuery, sizeof(struct User_query)) < 0)
-        perror("QueryRequest send failed");
+    {
+        perror("[ERROR] Query result sending is failed, try to connect server later");
+        exit(-1);
+    }
+
     printf("%s sent a request to the main server.\n", userName); /* on-screen message */
 
     if (read(*sd, &result, sizeof(result)) <= 0)
     {
-        printf("Query result received failed, try to connect server later.\n");
+        perror("[ERROR] Query result receiving is failed, try to connect server later");
         exit(-1);
     }
     printf("The client received the response from the Main server using TCP over port %d.\n", myportnum);
@@ -201,7 +205,7 @@ void userQuery(int *sd, char *userName, int myportnum)
     {
         printf("Invalid Course Category!\n"); /* on-screen message */
     }
-    else if (strcmp("Didn't find the course", result) == 0)
+    else if (strcmp("Didn't find the course!", result) == 0)
     {
         printf("Didn't find the course: %s.\n", newQuery.course); /* on-screen message */
     }

@@ -20,7 +20,7 @@ void initServerC(int *sd)
     /* Bind ServerC socket and address. */
     if (bind(*sd, (struct sockaddr *)&serverC_address, sizeof(serverC_address)) < 0)
     {
-        perror("serverC Warning: bind error");
+        perror("[ERROR] serverC bind error");
         exit(-1);
     }
 
@@ -49,7 +49,7 @@ int validateAuth(struct User_auth auth)
     if (fp == NULL)
     {
         printf("[ERROR] cred.txt load failed.\n");
-        exit(EXIT_FAILURE);
+        exit(-1);
     }
 
     /* check username and password */
@@ -68,7 +68,6 @@ int validateAuth(struct User_auth auth)
 
             if (strcmp(psw, auth.userPsw) == 0)
                 code += 1;
-            printf("psw passed: %s.\n", psw);
             break;
         }
     }
@@ -106,8 +105,7 @@ SESSION:
     /* send auth result back to serverM */
     rc = sendto(*sd, (char *)feedback, FEEDBACKSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));
     if (rc <= 0)
-        perror("ServerC send feedback failed");
-
+        perror("[ERROR] ServerC send feedback failed");
     printf("The ServerC finished sending the response to the Main Server.\n");
 
     goto SESSION; /* repeat */
@@ -115,8 +113,7 @@ SESSION:
 
 int main(int argc, char *argv[])
 {
-    int sd; /* socket descriptor */
-
+    int sd;            /* socket descriptor */
     initServerC(&sd);  /* initialize serverC */
     commuServerM(&sd); /* communicate with serverM */
 
