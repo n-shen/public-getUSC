@@ -100,7 +100,6 @@ SESSION:
     if (rc <= 0)
         perror("ServerC recv req failed");
     printf("The ServerC received an authentication request from the Main Server.\n");
-    printf("[Server Notice] From ServerM, username: %s, psw:%s.\n", buffer->userName, buffer->userPsw);
 
     sprintf(feedback, "%d", validateAuth(*buffer));
 

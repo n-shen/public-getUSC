@@ -147,6 +147,71 @@ void recvUserAuthFeedback(int sd, int my_port_num, char *userName, int *authAtte
 }
 
 /*
+ * Function: askUserQuery
+ * ----------------------------
+ *   Ask user for query input
+ *
+ *   *userQuery: user query request field (e.x. course code or category)
+ *   type: 1-course, 0-category
+ */
+void askUserQuery(char *userQuery, int type)
+{
+    char buffer[BUFFSIZE];
+    (type) ? (printf("Please enter the course code to query: ")) : (printf("Please enter the category (Credit/Professor/Days/CourseName): "));
+    fflush(stdout);
+    fgets(buffer, sizeof(buffer), stdin); /* retrieve user input from console */
+    buffer[strcspn(buffer, "\n")] = 0;
+    strcpy(userQuery, buffer);
+}
+
+/*
+ * Function: userQuery
+ * ----------------------------
+ *   Process user query request with ServerM
+ *
+ *   *sd: client socket descriptor
+ *   *userName: user name
+ *   myportnum: client TCP port number
+ */
+void userQuery(int *sd, char *userName, int myportnum)
+{
+    struct User_query newQuery;
+    char result[QUERYRESULTSIZE];
+    askUserQuery(newQuery.course, 1);   /* ask user for coursecode */
+    askUserQuery(newQuery.category, 0); /* ask user for category */
+
+    for (int i = 0; newQuery.category[i]; i++)
+        newQuery.category[i] = tolower(newQuery.category[i]);
+    for (int i = 0; newQuery.course[i]; i++)
+        newQuery.course[i] = toupper(newQuery.course[i]);
+
+    /* Send user query to the serverM via TCP */
+    if (write(*sd, (struct User_query *)&newQuery, sizeof(struct User_query)) < 0)
+        perror("QueryRequest send failed");
+    printf("%s sent a request to the main server.\n", userName); /* on-screen message */
+
+    if (read(*sd, &result, sizeof(result)) <= 0)
+    {
+        printf("Query result received failed, try to connect server later.\n");
+        exit(-1);
+    }
+    printf("The client received the response from the Main server using TCP over port %d.\n", myportnum);
+
+    if (strcmp("Invalid Category!", result) == 0)
+    {
+        printf("Invalid Course Category!\n"); /* on-screen message */
+    }
+    else if (strcmp("Didn't find the course", result) == 0)
+    {
+        printf("Didn't find the course: %s.\n", newQuery.course); /* on-screen message */
+    }
+    else
+    {
+        printf("The %s of %s is %s.\n", newQuery.category, newQuery.course, result); /* on-screen message */
+    }
+}
+
+/*
  * Function: commuServerM
  * ----------------------------
  *  Client main chanel with ServerM
@@ -174,8 +239,10 @@ AUTH_SESSION:                   /* AUTH_SESSION: process authentication request 
         goto MAIN_SESSION;
     goto AUTH_SESSION; /* if auth is NOT successful, repeat AUTH_SESSION */
 
-MAIN_SESSION: /* MAIN_SESSION: major tasks */
-    printf("Logged In.\n");
+MAIN_SESSION:                                     /* MAIN_SESSION: major query tasks */
+    userQuery(sd, newUser.userName, my_port_num); /* process user query */
+    printf("\n-----Start a new request-----\n");
+    goto MAIN_SESSION;
 }
 
 /*
