@@ -95,7 +95,7 @@ void sendUserAuth(int *sd, struct User_auth *newUser)
 
     /* Send user authentication to the serverM via TCP */
     if (write(*sd, (struct User_auth *)newUser, sizeof(struct User_auth)) < 0)
-        perror("AuthReq send failed");
+        perror("[ERROR] AuthReq send failed");
     printf("%s sent an authentication request to the main server.\n", newUser->userName); /* on-screen message */
 }
 
@@ -127,13 +127,13 @@ void recvUserAuthFeedback(int sd, int my_port_num, char *userName, int *authAtte
     case 101:
         *authAttempts -= 1;
         printf("Authentication failed: Username does not exist\n");
-        printf("Attempts remaining:%d\n", *authAttempts);
+        printf("\nAttempts remaining:%d\n", *authAttempts);
         break;
 
     case 102:
         *authAttempts -= 1;
         printf("Authentication failed: Password does not match\n");
-        printf("Attempts remaining:%d\n", *authAttempts);
+        printf("\nAttempts remaining:%d\n", *authAttempts);
         break;
 
     case 103:
@@ -187,21 +187,25 @@ void userQuery(int *sd, char *userName, int myportnum)
 
     /* Send user query to the serverM via TCP */
     if (write(*sd, (struct User_query *)&newQuery, sizeof(struct User_query)) < 0)
-        perror("QueryRequest send failed");
+    {
+        perror("[ERROR] Query result sending is failed, try to connect server later");
+        exit(-1);
+    }
+
     printf("%s sent a request to the main server.\n", userName); /* on-screen message */
 
     if (read(*sd, &result, sizeof(result)) <= 0)
     {
-        printf("Query result received failed, try to connect server later.\n");
+        perror("[ERROR] Query result receiving is failed, try to connect server later");
         exit(-1);
     }
     printf("The client received the response from the Main server using TCP over port %d.\n", myportnum);
 
     if (strcmp("Invalid Category!", result) == 0)
     {
-        printf("Invalid Course Category!\n"); /* on-screen message */
+        printf("Invalid Course Category: %s.\n", newQuery.category); /* on-screen message */
     }
-    else if (strcmp("Didn't find the course", result) == 0)
+    else if (strcmp("Didn't find the course!", result) == 0)
     {
         printf("Didn't find the course: %s.\n", newQuery.course); /* on-screen message */
     }

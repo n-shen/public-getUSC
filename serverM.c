@@ -23,7 +23,7 @@ void initServerMUDP(int *sd_udp)
     /* bind and check return code from binding */
     if (bind(*sd_udp, (struct sockaddr *)&serverM_UDP_address, sizeof(serverM_UDP_address)) < 0)
     {
-        perror("serverM Warning: UDP bind error");
+        perror("[ERROR] serverM Warning: UDP bind error");
         exit(-1);
     }
 }
@@ -49,7 +49,7 @@ void initServerMTCP(int *sd_tcp)
     /* Bind and check return code from binding */
     if (bind(*sd_tcp, (struct sockaddr *)&serverM_address, sizeof(serverM_address)) < 0)
     {
-        perror("serverM Warning: bind error");
+        perror("[ERROR] serverM Warning: bind error");
         exit(-1);
     }
 
@@ -74,15 +74,30 @@ void bindServerC(struct sockaddr_in *server_address)
 /*
  * Function: bindServerEE
  * ----------------------------
- *   Bind with serverC via UDP
+ *   Bind with serverEE via UDP
  *
- *   *server_address: serverC address
+ *   *server_address: serverEE address
  */
 void bindServerEE(struct sockaddr_in *server_address)
 {
     /* bind with serverEE */
     server_address->sin_family = AF_INET;
     server_address->sin_port = htons(PORT_NUM_SERVEREE_UDP);
+    server_address->sin_addr.s_addr = INADDR_ANY;
+}
+
+/*
+ * Function: bindServerCS
+ * ----------------------------
+ *   Bind with serverCS via UDP
+ *
+ *   *server_address: serverCS address
+ */
+void bindServerCS(struct sockaddr_in *server_address)
+{
+    /* bind with serverEE */
+    server_address->sin_family = AF_INET;
+    server_address->sin_port = htons(PORT_NUM_SERVERCS_UDP);
     server_address->sin_addr.s_addr = INADDR_ANY;
 }
 
@@ -151,15 +166,15 @@ void verifyAuth(struct ServerM *serverM_API, struct User_auth *newUser, char *fe
     /* encrypt auth */
     encryptAuth(newUser->userName);
     encryptAuth(newUser->userPsw);
-    printf("Encrypted: %s, %s.\n", newUser->userName, newUser->userPsw);
+    /* send auth to serverC */
     if (sendto(serverM_API->sd_udp, (struct User_auth *)newUser, (1024 + sizeof(newUser)), 0, (struct sockaddr *)&serverM_API->addr_ServerC, sizeof(serverM_API->addr_ServerC)) <= 0)
-        perror("UDP send user auth req failed");
+        perror("[ERROR] UDP user auth request sending is failed");
     printf("The main server sent an authentication request to serverC.\n");
 
     /* recv verification feedback from serverC */
     rc = recvfrom(serverM_API->sd_udp, (char *)feedback, FEEDBACKSIZE, MSG_WAITALL, (struct sockaddr *)&serverM_API->addr_ServerC, &serverC_address_len);
     if (rc <= 0)
-        perror("ServerM recv feedback failed");
+        perror("[ERROR] ServerM recv feedback failed");
     feedback[rc] = '\0';
     printf("The main server received the result of the authentication request from ServerC using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
 }
@@ -181,13 +196,12 @@ int authProcess(struct ServerM *serverM_API, char *userName)
 
     recvUserAuth(serverM_API, &newUser); /* receive user Auth request from client */
     strncpy(userName, newUser.userName, BUFFSIZE);
-    printf("Received Auth: [%s,%s]\n", newUser.userName, newUser.userPsw);
     printf("The main server received the authentication for %s using TCP over port %d.\n", newUser.userName, PORT_NUM_SERVERM_TCP);
 
     verifyAuth(serverM_API, &newUser, fbCode);                            /* verify auth via serverC */
     if (write(serverM_API->connected_sd_tcp, fbCode, sizeof(fbCode)) < 0) /* send feedback to client via TCP */
-        perror("User Auth Feedback sent failed");
-    printf("The main server sent the authentication result to client. fbcode: %s\n", fbCode);
+        perror("[ERROR] User Auth Feedback sent failed");
+    printf("The main server sent the authentication result to client.\n");
 
     return atoi(fbCode);
 }
@@ -199,7 +213,6 @@ int authProcess(struct ServerM *serverM_API, char *userName)
  *
  *   *serverM_API: serverM API
  *   *userQuery: user query request
- *
  */
 void recvUserQuery(struct ServerM *serverM_API, struct User_query *userQuery)
 {
@@ -217,11 +230,11 @@ void recvUserQuery(struct ServerM *serverM_API, struct User_query *userQuery)
 /*
  * Function: retrieveCourse
  * ----------------------------
- *   Verify client's Auth with ServerC via TCP
+ *   Retrieve course info from ServerEE via UDP
  *
  *   *serverM_API: serverM API
- *   *newUser: user auth structure
- *   *feedback: feedback code
+ *   *query: user query
+ *   *result: query result
  */
 void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char *result)
 {
@@ -230,19 +243,33 @@ void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char 
     socklen_t serverEE_address_len;
     socklen_t serverCS_address_len;
 
-    /* encrypt auth */
-    if (strncmp(query->course, "EE", 2) == 0)
+    /* routine the query to corresponding department */
+    if (strncmp(query->course, "EE", 2) == 0) /* EE server */
     {
         if (sendto(serverM_API->sd_udp, (struct User_query *)query, (1024 + sizeof(query)), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, sizeof(serverM_API->addr_ServerEE)) <= 0)
-            perror("UDP send user query request failed");
+            perror("[ERROR] UDP send user query request failed");
         printf("The main server sent a request to serverEE.\n");
         /* recv verification feedback from serverEE */
         rc = recvfrom(serverM_API->sd_udp, (char *)result, QUERYRESULTSIZE, MSG_WAITALL, (struct sockaddr *)&serverM_API->addr_ServerEE, &serverEE_address_len);
         if (rc <= 0)
-            perror("ServerM recv feedback failed");
+            perror("[ERROR] ServerM receive query result from serverEE failed");
         result[rc] = '\0';
         printf("The main server received the response from ServerEE using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
     }
+    else if (strncmp(query->course, "CS", 2) == 0) /* CS server */
+    {
+        if (sendto(serverM_API->sd_udp, (struct User_query *)query, (1024 + sizeof(query)), 0, (struct sockaddr *)&serverM_API->addr_ServerCS, sizeof(serverM_API->addr_ServerCS)) <= 0)
+            perror("[ERROR] UDP send user query request failed");
+        printf("The main server sent a request to serverCS.\n");
+        /* recv verification feedback from serverCS */
+        rc = recvfrom(serverM_API->sd_udp, (char *)result, QUERYRESULTSIZE, MSG_WAITALL, (struct sockaddr *)&serverM_API->addr_ServerCS, &serverCS_address_len);
+        if (rc <= 0)
+            perror("[ERROR] ServerM receive query result from serverCS failed");
+        result[rc] = '\0';
+        printf("The main server received the response from ServerCS using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
+    }
+    else
+        strcpy(result, "Didn't find the course!");
 }
 
 /*
@@ -263,7 +290,7 @@ void queryProcess(struct ServerM *serverM_API, char *userName)
     retrieveCourse(serverM_API, &newQuery, result);
 
     if (write(serverM_API->connected_sd_tcp, result, sizeof(result)) < 0) /* send query result to client via TCP */
-        perror("User query result sent failed");
+        perror("[ERROR] User query result sent failed");
     printf("The main server sent the query information to the client.\n");
 }
 
@@ -301,6 +328,7 @@ int main(int argc, char *argv[])
     initServerMUDP(&serverM_API.sd_udp);
     bindServerC(&serverM_API.addr_ServerC);   /* bind with serverC */
     bindServerEE(&serverM_API.addr_ServerEE); /* bind with serverEE */
+    bindServerCS(&serverM_API.addr_ServerCS); /* bind with serverCS */
     commuClient(&serverM_API);                /* communicate with client */
 
     return 0;
