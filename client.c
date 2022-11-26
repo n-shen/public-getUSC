@@ -156,7 +156,7 @@ void recvUserAuthFeedback(int sd, int my_port_num, char *userName, int *authAtte
  */
 void askUserQuery(char *userQuery, int type)
 {
-    char buffer[BUFFSIZE];
+    char buffer[BUFFSIZECOURSE];
     (type) ? (printf("Please enter the course code to query: ")) : (printf("Please enter the category (Credit/Professor/Days/CourseName): "));
     fflush(stdout);
     fgets(buffer, sizeof(buffer), stdin); /* retrieve user input from console */
@@ -177,6 +177,7 @@ void userQuery(int *sd, char *userName, int myportnum)
 {
     struct User_query newQuery;
     char result[QUERYRESULTSIZE];
+    char infolist[COURSEINFOSIZE];
     askUserQuery(newQuery.course, 1);   /* ask user for coursecode */
     askUserQuery(newQuery.category, 0); /* ask user for category */
 

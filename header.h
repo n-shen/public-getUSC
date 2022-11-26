@@ -8,9 +8,12 @@
 #include <ctype.h>
 
 #define BUFFSIZE 51
+#define BUFFSIZECOURSE 101
+
 #define FEEDBACKSIZE 4
 #define QUERYRESULTSIZE 256
 #define COURSEINFOSIZE 1280
+
 #define AUTHATTEMPTS 3 /* maximum login attempts, must greater than 0 */
 
 #define IP_CLIENT "127.0.0.1"  /* client IP address */
@@ -45,6 +48,6 @@ struct User_auth
 /* DataStructure: User Query file */
 struct User_query
 {
-    char course[BUFFSIZE];
-    char category[BUFFSIZE];
+    char course[BUFFSIZECOURSE];
+    char category[BUFFSIZECOURSE];
 };
