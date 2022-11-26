@@ -120,6 +120,7 @@ void recvUserAuth(struct ServerM *serverM_API, struct User_auth *userAuth)
         commuClient(serverM_API); /* wait for new client */
     }
     memcpy(userAuth, buffer, sizeOfUserAuth); /* save result*/
+    free(buffer);
 }
 
 /*
@@ -272,6 +273,57 @@ void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char 
         strcpy(result, "Didn't find the course!");
 }
 
+void queryMutiSplit(struct User_query mutiQuery, struct User_query *queryEE, struct User_query *queryCS, int *order)
+{
+    int i = 0;
+    char *token = strtok(mutiQuery.course, " ");
+    while (token != NULL)
+    {
+        if (strncmp(token, "EE", 2) == 0)
+        {
+            strcat(queryEE->course, token);
+            strcat(queryEE->course, "&");
+            order[i] = 1;
+        }
+        else if (strncmp(token, "CS", 2) == 0)
+        {
+            strcat(queryCS->course, token);
+            strcat(queryCS->course, "&");
+            order[i] = 2;
+        }
+        else
+            order[i] = -1;
+
+        token = strtok(NULL, " ");
+        i += 1;
+    }
+
+    queryEE->course[strlen(queryEE->course) - 1] = '\0';
+    queryCS->course[strlen(queryCS->course) - 1] = '\0';
+    strcpy(queryEE->category, "!muti!");
+    strcpy(queryCS->category, "!muti!");
+}
+
+void queryMutiProcess(struct ServerM *serverM_API, struct User_query *mutiQuery)
+{
+    struct User_query queryEE, queryCS;
+    int order[11] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2};
+    queryMutiSplit(*mutiQuery, &queryEE, &queryCS, order);
+    printf("EE: %s.\n", queryEE.course);    // printing each token
+    printf("EEC: %s.\n", queryEE.category); // printing each token
+    printf("CS: %s.\n", queryCS.course);    // printing each token
+    printf("EEC: %s.\n", queryCS.category); // printing each token
+    for (int loop = 0; loop < 10; loop++)
+        printf("ORDER: %d.\n", order[loop]);
+
+    if (strlen(queryEE.course) > 0)
+    {
+        if (sendto(serverM_API->sd_udp, (struct User_query *)&queryEE, (1024 + sizeof(queryEE)), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, sizeof(serverM_API->addr_ServerEE)) <= 0)
+            perror("[ERROR] UDP send user query to serverEE request failed");
+        printf("The main server sent a muti request to serverEE.\n");
+    }
+}
+
 /*
  * Function: queryProcess
  * ----------------------------
@@ -285,13 +337,18 @@ void queryProcess(struct ServerM *serverM_API, char *userName)
     struct User_query newQuery;
     char result[QUERYRESULTSIZE]; /* query result */
 
-    recvUserQuery(serverM_API, &newQuery); /* receive user query request from client */
-    printf("The main server received from %s to query course %s about %s using TCP over port %d.\n", userName, newQuery.course, newQuery.category, PORT_NUM_SERVERM_TCP);
-    retrieveCourse(serverM_API, &newQuery, result);
+    recvUserQuery(serverM_API, &newQuery);        /* receive user query request from client */
+    if (strcmp("!muti!", newQuery.category) == 0) /* if in muti mode */
+        queryMutiProcess(serverM_API, &newQuery);
+    else
+    {
+        printf("The main server received from %s to query course %s about %s using TCP over port %d.\n", userName, newQuery.course, newQuery.category, PORT_NUM_SERVERM_TCP);
+        retrieveCourse(serverM_API, &newQuery, result);
 
-    if (write(serverM_API->connected_sd_tcp, result, sizeof(result)) < 0) /* send query result to client via TCP */
-        perror("[ERROR] User query result sent failed");
-    printf("The main server sent the query information to the client.\n");
+        if (write(serverM_API->connected_sd_tcp, result, sizeof(result)) < 0) /* send query result to client via TCP */
+            perror("[ERROR] User query result sent failed");
+        printf("The main server sent the query information to the client.\n");
+    }
 }
 
 /*

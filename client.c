@@ -200,10 +200,10 @@ void userQuery(int *sd, char *userName, int myportnum)
         perror("[ERROR] Query result sending is failed, try to connect server later");
         exit(-1);
     }
-    printf("%s sent a request to the main server.\n", userName); /* on-screen message */
 
     if (mode)
     {
+        printf("%s sent a request to the main server.\n", userName); /* on-screen message */
         if (read(*sd, &result, sizeof(result)) <= 0)
         {
             perror("[ERROR] Query result receiving is failed, try to connect server later");
@@ -223,6 +223,10 @@ void userQuery(int *sd, char *userName, int myportnum)
         {
             printf("The %s of %s is %s.\n", newQuery.category, newQuery.course, result); /* on-screen message */
         }
+    }
+    else
+    {
+        printf("%s sent a request with multiple CourseCode to the main server.\n", userName); /* on-screen message */
     }
 }
 
