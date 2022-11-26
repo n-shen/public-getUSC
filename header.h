@@ -11,8 +11,9 @@
 #define BUFFSIZECOURSE 101
 
 #define FEEDBACKSIZE 4
-#define QUERYRESULTSIZE 256
-#define COURSEINFOSIZE 1280
+#define QUERYRESULTSIZE 128
+#define COURSEINFOSIZE 640
+#define COURSELISTSIZE 6400
 
 #define AUTHATTEMPTS 3 /* maximum login attempts, must greater than 0 */
 

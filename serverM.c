@@ -277,6 +277,8 @@ void queryMutiSplit(struct User_query mutiQuery, struct User_query *queryEE, str
 {
     int i = 0;
     char *token = strtok(mutiQuery.course, " ");
+    memset(queryEE->course, 0, BUFFSIZECOURSE);
+    memset(queryCS->course, 0, BUFFSIZECOURSE);
     while (token != NULL)
     {
         if (strncmp(token, "EE", 2) == 0)
@@ -306,21 +308,32 @@ void queryMutiSplit(struct User_query mutiQuery, struct User_query *queryEE, str
 
 void queryMutiProcess(struct ServerM *serverM_API, struct User_query *mutiQuery)
 {
+    int rc = 0;
     struct User_query queryEE, queryCS;
+    socklen_t serverEE_address_len, serverCS_address_len;
+    char courseinfosEE[10][COURSEINFOSIZE], courseinfosCS[10][COURSEINFOSIZE];
+    memset(courseinfosEE, 0, sizeof(courseinfosEE[0][0]) * 10 * COURSEINFOSIZE);
+    memset(courseinfosCS, 0, sizeof(courseinfosCS[0][0]) * 10 * COURSEINFOSIZE);
     int order[11] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2};
+
     queryMutiSplit(*mutiQuery, &queryEE, &queryCS, order);
     printf("EE: %s.\n", queryEE.course);    // printing each token
     printf("EEC: %s.\n", queryEE.category); // printing each token
     printf("CS: %s.\n", queryCS.course);    // printing each token
     printf("EEC: %s.\n", queryCS.category); // printing each token
-    for (int loop = 0; loop < 10; loop++)
-        printf("ORDER: %d.\n", order[loop]);
 
     if (strlen(queryEE.course) > 0)
     {
         if (sendto(serverM_API->sd_udp, (struct User_query *)&queryEE, (1024 + sizeof(queryEE)), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, sizeof(serverM_API->addr_ServerEE)) <= 0)
-            perror("[ERROR] UDP send user query to serverEE request failed");
+            perror("[ERROR] UDP send user muti query to serverEE request failed");
         printf("The main server sent a muti request to serverEE.\n");
+
+        rc = recvfrom(serverM_API->sd_udp, (char *)courseinfosEE, 10 * COURSEINFOSIZE, MSG_WAITALL, (struct sockaddr *)&serverM_API->addr_ServerEE, &serverEE_address_len);
+        if (rc <= 0)
+            perror("[ERROR] ServerM receive muti query result from serverEE failed");
+        printf("The main server received the response from ServerEE using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
+        for (int loop = 0; loop < 10; loop++)
+            printf("EE_LIST: %s.\n", courseinfosEE[loop]);
     }
 }
 

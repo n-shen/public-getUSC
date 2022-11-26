@@ -178,7 +178,7 @@ void userQuery(int *sd, char *userName, int myportnum)
     struct User_query newQuery;
     int mode = 1; /* 1 - single; 0 - multi */
     char result[QUERYRESULTSIZE];
-    char mutilist[COURSEINFOSIZE];
+
     askUserQuery(newQuery.course, 1); /* ask user for coursecode */
     for (int i = 0; newQuery.course[i]; i++)
         newQuery.course[i] = toupper(newQuery.course[i]);
