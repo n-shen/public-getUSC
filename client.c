@@ -176,15 +176,23 @@ void askUserQuery(char *userQuery, int type)
 void userQuery(int *sd, char *userName, int myportnum)
 {
     struct User_query newQuery;
+    int mode = 1; /* 1 - single; 0 - multi */
     char result[QUERYRESULTSIZE];
-    char infolist[COURSEINFOSIZE];
-    askUserQuery(newQuery.course, 1);   /* ask user for coursecode */
-    askUserQuery(newQuery.category, 0); /* ask user for category */
-
-    for (int i = 0; newQuery.category[i]; i++)
-        newQuery.category[i] = tolower(newQuery.category[i]);
+    char mutilist[COURSEINFOSIZE];
+    askUserQuery(newQuery.course, 1); /* ask user for coursecode */
     for (int i = 0; newQuery.course[i]; i++)
         newQuery.course[i] = toupper(newQuery.course[i]);
+    if (strstr(newQuery.course, " ") != NULL)
+    {
+        mode = 0; /* switch to muti mode */
+        strcpy(newQuery.category, "!muti!");
+    }
+    else
+    {
+        askUserQuery(newQuery.category, 0); /* ask user for category */
+        for (int i = 0; newQuery.category[i]; i++)
+            newQuery.category[i] = tolower(newQuery.category[i]);
+    }
 
     /* Send user query to the serverM via TCP */
     if (write(*sd, (struct User_query *)&newQuery, sizeof(struct User_query)) < 0)
@@ -192,27 +200,29 @@ void userQuery(int *sd, char *userName, int myportnum)
         perror("[ERROR] Query result sending is failed, try to connect server later");
         exit(-1);
     }
-
     printf("%s sent a request to the main server.\n", userName); /* on-screen message */
 
-    if (read(*sd, &result, sizeof(result)) <= 0)
+    if (mode)
     {
-        perror("[ERROR] Query result receiving is failed, try to connect server later");
-        exit(-1);
-    }
-    printf("The client received the response from the Main server using TCP over port %d.\n", myportnum);
+        if (read(*sd, &result, sizeof(result)) <= 0)
+        {
+            perror("[ERROR] Query result receiving is failed, try to connect server later");
+            exit(-1);
+        }
+        printf("The client received the response from the Main server using TCP over port %d.\n", myportnum);
 
-    if (strcmp("Invalid Category!", result) == 0)
-    {
-        printf("Invalid Course Category: %s.\n", newQuery.category); /* on-screen message */
-    }
-    else if (strcmp("Didn't find the course!", result) == 0)
-    {
-        printf("Didn't find the course: %s.\n", newQuery.course); /* on-screen message */
-    }
-    else
-    {
-        printf("The %s of %s is %s.\n", newQuery.category, newQuery.course, result); /* on-screen message */
+        if (strcmp("Invalid Category!", result) == 0)
+        {
+            printf("Invalid Course Category: %s.\n", newQuery.category); /* on-screen message */
+        }
+        else if (strcmp("Didn't find the course!", result) == 0)
+        {
+            printf("Didn't find the course: %s.\n", newQuery.course); /* on-screen message */
+        }
+        else
+        {
+            printf("The %s of %s is %s.\n", newQuery.category, newQuery.course, result); /* on-screen message */
+        }
     }
 }
 
