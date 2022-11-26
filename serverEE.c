@@ -24,7 +24,7 @@ void initServerEE(int *sd)
         exit(-1);
     }
 
-    printf("The ServerEE is up and running using UDP on port %d.\n", PORT_NUM_SERVEREE_UDP);
+    printf("The ServerEE is up and running using UDP on port %d.\n", PORT_NUM_SERVEREE_UDP); /* on-screen message */
 }
 
 /*
@@ -62,6 +62,7 @@ void retrieveData(struct User_query query, char *result)
             if (strcmp("credit", query.category) == 0)
             {
                 strcpy(result, credit);
+                printf("The course information has been found: The credit of %s is %s.\n", query.course, result); /* on-screen message */
                 break;
             }
 
@@ -69,6 +70,7 @@ void retrieveData(struct User_query query, char *result)
             if (strcmp("professor", query.category) == 0)
             {
                 strcpy(result, professor);
+                printf("The course information has been found: The professor of %s is %s.\n", query.course, result); /* on-screen message */
                 break;
             }
 
@@ -76,6 +78,7 @@ void retrieveData(struct User_query query, char *result)
             if (strcmp("days", query.category) == 0)
             {
                 strcpy(result, days);
+                printf("The course information has been found: The days of %s is %s.\n", query.course, result); /* on-screen message */
                 break;
             }
 
@@ -88,6 +91,7 @@ void retrieveData(struct User_query query, char *result)
                     name[strlen(name) - 1] = '\0';
                 }
                 strcpy(result, name);
+                printf("The course information has been found: The coursename of %s is %s.\n", query.course, result); /* on-screen message */
                 break;
             }
             found = 0;
@@ -95,10 +99,13 @@ void retrieveData(struct User_query query, char *result)
     }
 
     if (found == -1)
-        strcpy(result, "Didn't find the course");
-    if (found == 0)
-        strcpy(result, "Invalid category");
+    {
+        strcpy(result, "Didn't find the course!");
+        printf("Didn't find the course: %s.\n", query.course); /* on-screen message */
+    }
 
+    if (found == 0)
+        strcpy(result, "Invalid Category!");
     fclose(fp); /* close file */
 }
 
@@ -125,7 +132,7 @@ SESSION:
     {
         perror("ServerEE receiving request failed");
     }
-    printf("The ServerEE received a request from the Main Server about %s of %s.\n", buffer->category, buffer->course);
+    printf("The ServerEE received a request from the Main Server about %s of %s.\n", buffer->category, buffer->course); /* on-screen message */
 
     /* retrieve course info */
     retrieveData(*buffer, result);
@@ -134,8 +141,7 @@ SESSION:
     rc = sendto(*sd, (char *)result, QUERYRESULTSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));
     if (rc <= 0)
         perror("ServerEE send feedback failed");
-
-    printf("The ServerEE finished sending the response to the Main Server.\n");
+    printf("The ServerEE finished sending the response to the Main Server.\n"); /* on-screen message */
 
     goto SESSION; /* repeat */
 }

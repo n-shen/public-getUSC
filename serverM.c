@@ -236,19 +236,13 @@ void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char 
         if (sendto(serverM_API->sd_udp, (struct User_query *)query, (1024 + sizeof(query)), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, sizeof(serverM_API->addr_ServerEE)) <= 0)
             perror("UDP send user query request failed");
         printf("The main server sent a request to serverEE.\n");
+        /* recv verification feedback from serverEE */
+        rc = recvfrom(serverM_API->sd_udp, (char *)result, QUERYRESULTSIZE, MSG_WAITALL, (struct sockaddr *)&serverM_API->addr_ServerEE, &serverEE_address_len);
+        if (rc <= 0)
+            perror("ServerM recv feedback failed");
+        result[rc] = '\0';
+        printf("The main server received the response from ServerEE using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
     }
-    else
-    {
-        printf("Invalid course format!\n");
-        return;
-    }
-
-    /* recv verification feedback from serverC */
-    rc = recvfrom(serverM_API->sd_udp, (char *)result, QUERYRESULTSIZE, MSG_WAITALL, (struct sockaddr *)&serverM_API->addr_ServerEE, &serverEE_address_len);
-    if (rc <= 0)
-        perror("ServerM recv feedback failed");
-    result[rc] = '\0';
-    printf("The main server received the response from ServerEE using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
 }
 
 /*
@@ -262,12 +256,15 @@ void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char 
 void queryProcess(struct ServerM *serverM_API, char *userName)
 {
     struct User_query newQuery;
-    char result[QUERYRESULTSIZE]; /* feedback code */
+    char result[QUERYRESULTSIZE]; /* query result */
 
     recvUserQuery(serverM_API, &newQuery); /* receive user query request from client */
     printf("The main server received from %s to query course %s about %s using TCP over port %d.\n", userName, newQuery.course, newQuery.category, PORT_NUM_SERVERM_TCP);
     retrieveCourse(serverM_API, &newQuery, result);
-    printf("Received query result: %s.\n", result);
+
+    if (write(serverM_API->connected_sd_tcp, result, sizeof(result)) < 0) /* send query result to client via TCP */
+        perror("User query result sent failed");
+    printf("The main server sent the query information to the client.\n");
 }
 
 /*
