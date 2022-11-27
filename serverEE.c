@@ -14,7 +14,7 @@ void initServerEE(int *sd)
 
     serverEE_address.sin_family = AF_INET;
     serverEE_address.sin_port = htons(PORT_NUM_SERVEREE_UDP);
-    serverEE_address.sin_addr.s_addr = INADDR_ANY;
+    serverEE_address.sin_addr.s_addr = inet_addr(IP_SERVEREE);
 
     /* Bind ServerEE socket and address. */
     if (bind(*sd, (struct sockaddr *)&serverEE_address, sizeof(serverEE_address)) < 0)
