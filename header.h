@@ -18,9 +18,11 @@
 #define MUTIQUERYSIZE 10
 #define AUTHATTEMPTS 3 /* maximum login attempts, must greater than 0 */
 
-#define IP_CLIENT "127.0.0.1"  /* client IP address */
-#define IP_SERVERM "127.0.0.1" /* serverM IP address */
-#define IP_SERVERC "127.0.0.1" /* serverM IP address */
+#define IP_CLIENT "127.0.0.1"   /* client IP address */
+#define IP_SERVERM "127.0.0.1"  /* serverM IP address */
+#define IP_SERVERC "127.0.0.1"  /* serverC IP address */
+#define IP_SERVEREE "127.0.0.1" /* serverEE IP address */
+#define IP_SERVERCS "127.0.0.1" /* serverCS IP address */
 
 #define PORT_NUM_SERVERM_TCP 25448 /* serverM TCP port num */
 #define PORT_NUM_SERVERM_UDP 24448 /* serverM UDP port num */

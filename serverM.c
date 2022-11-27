@@ -18,7 +18,7 @@ void initServerMUDP(int *sd_udp)
 
     serverM_UDP_address.sin_family = AF_INET;
     serverM_UDP_address.sin_port = htons(PORT_NUM_SERVERM_UDP);
-    serverM_UDP_address.sin_addr.s_addr = INADDR_ANY;
+    serverM_UDP_address.sin_addr.s_addr = inet_addr(IP_SERVERM);
 
     /* bind and check return code from binding */
     if (bind(*sd_udp, (struct sockaddr *)&serverM_UDP_address, sizeof(serverM_UDP_address)) < 0)
@@ -44,7 +44,7 @@ void initServerMTCP(int *sd_tcp)
 
     serverM_address.sin_family = AF_INET;
     serverM_address.sin_port = htons(PORT_NUM_SERVERM_TCP);
-    serverM_address.sin_addr.s_addr = INADDR_ANY;
+    serverM_address.sin_addr.s_addr = inet_addr(IP_SERVERM);
 
     /* Bind and check return code from binding */
     if (bind(*sd_tcp, (struct sockaddr *)&serverM_address, sizeof(serverM_address)) < 0)
@@ -68,7 +68,7 @@ void bindServerC(struct sockaddr_in *server_address)
     /* bind with serverC */
     server_address->sin_family = AF_INET;
     server_address->sin_port = htons(PORT_NUM_SERVERC_UDP);
-    server_address->sin_addr.s_addr = INADDR_ANY;
+    server_address->sin_addr.s_addr = inet_addr(IP_SERVERC);
 }
 
 /*
@@ -83,7 +83,7 @@ void bindServerEE(struct sockaddr_in *server_address)
     /* bind with serverEE */
     server_address->sin_family = AF_INET;
     server_address->sin_port = htons(PORT_NUM_SERVEREE_UDP);
-    server_address->sin_addr.s_addr = INADDR_ANY;
+    server_address->sin_addr.s_addr = inet_addr(IP_SERVEREE);
 }
 
 /*
@@ -98,7 +98,7 @@ void bindServerCS(struct sockaddr_in *server_address)
     /* bind with serverEE */
     server_address->sin_family = AF_INET;
     server_address->sin_port = htons(PORT_NUM_SERVERCS_UDP);
-    server_address->sin_addr.s_addr = INADDR_ANY;
+    server_address->sin_addr.s_addr = inet_addr(IP_SERVERCS);
 }
 
 /*
@@ -168,7 +168,6 @@ void verifyAuth(struct ServerM *serverM_API, struct User_auth *newUser, char *fe
     encryptAuth(newUser->userName);
     encryptAuth(newUser->userPsw);
     /* send auth to serverC */
-    printf("%s, %s\n", newUser->userName, newUser->userPsw);
     if (sendto(serverM_API->sd_udp, (struct User_auth *)newUser, sizeof(struct User_auth), 0, (struct sockaddr *)&serverM_API->addr_ServerC, sizeof(serverM_API->addr_ServerC)) <= 0)
         perror("[ERROR] UDP user auth request sending is failed");
     printf("The main server sent an authentication request to serverC.\n");
