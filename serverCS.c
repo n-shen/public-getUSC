@@ -50,7 +50,7 @@ void retrieveData(struct User_query query, char *result)
         exit(-1);
     }
 
-    /* check username and password */
+    /* look for course info */
     while (fgets(line, sizeof(line), fp) != NULL)
     {
         code = strtok(line, ",");
@@ -113,6 +113,107 @@ void retrieveData(struct User_query query, char *result)
 }
 
 /*
+ * Function: retrieveMultiData
+ * ----------------------------
+ *   retrieve course lists info from db
+ *
+ *   token: client query request
+ *   *courseinfo: query result
+ */
+void retrieveMultiData(char *token, char *courseinfo)
+{
+    /* file sys */
+    FILE *fp;
+    char *code;
+    char line[COURSEINFOSIZE];
+    int found = -1;
+    int i;
+
+    fp = fopen("./cs.txt", "r"); /* open credential db */
+    if (fp == NULL)
+    {
+        printf("[ERROR] cs.txt load failed.\n");
+        exit(-1);
+    }
+    /* look for specific course info */
+    while (fgets(line, sizeof(line), fp) != NULL)
+    {
+        code = strtok(line, ","); /* course code */
+        if (strcmp(code, token) == 0)
+        {
+            found = 1;
+            strcat(courseinfo, code);
+            strcat(courseinfo, ": ");
+
+            for (i = 0; i < 3; i++)
+            {
+                code = strtok(NULL, ","); /* credit, Professor, and days*/
+                strcat(courseinfo, code);
+                strcat(courseinfo, ", ");
+            }
+
+            code = strtok(NULL, ","); /* coursename */
+            if (code[strlen(code) - 1] == '\n')
+            {
+                code[strcspn(code, "\n")] = 0;
+                code[strlen(code) - 1] = '\0';
+            }
+            strcat(courseinfo, code);
+            break;
+        }
+    }
+    if (found == -1)
+    {
+        strcpy(courseinfo, "Didn't find the course: ");
+        strcat(courseinfo, token);
+    }
+
+    fclose(fp); /* close file */
+}
+
+/*
+ * Function: queryMutiProcess
+ * ----------------------------
+ *   Muti mode: process query
+ *
+ *   *courses: a list of course code
+ *   *sd: client TCP socket
+ *  *serverM_address API of serverM
+ */
+void queryMutiProcess(char *courses, int *sd, struct sockaddr_in *serverM_address)
+{
+    int i = 0, rc = 0;
+    char courselist[10][QUERYRESULTSIZE], courseinfos[10][COURSEINFOSIZE]; /* muti courses' codes and infos */
+    memset(courselist, 0, sizeof(courselist[0][0]) * 10 * QUERYRESULTSIZE);
+    memset(courseinfos, 0, sizeof(courseinfos[0][0]) * 10 * COURSEINFOSIZE);
+
+    /* read query request from serverM */
+    char *token = strtok(courses, "&");
+    while (token != NULL)
+    {
+        strcpy(courselist[i], token);
+        token = strtok(NULL, "&");
+        i += 1;
+    }
+
+    /* process each query */
+    for (i = 0; i < 10; i++)
+    {
+        if (strlen(courselist[i]) == 0)
+            break;
+        retrieveMultiData(courselist[i], courseinfos[i]); /* retrieve course data and store into courseinfos */
+    }
+
+    /* send query result back to serverM */
+    rc = sendto(*sd, (char *)courseinfos, 10 * COURSEINFOSIZE, 0, (struct sockaddr *)serverM_address, sizeof(*serverM_address));
+    if (rc <= 0)
+    {
+        perror("[ERROR] ServerCS send feedback failed");
+        exit(-1);
+    }
+}
+
+/*
  * Function: commuServerM
  * ----------------------------
  *   Communicate with serverM
@@ -125,30 +226,33 @@ void commuServerM(int *sd)
     int rc;
     struct sockaddr_in serverM_address;
     socklen_t serverM_address_len;
-    struct User_query *buffer = malloc(sizeof(struct User_query));
+    struct User_query buffer;
     char result[QUERYRESULTSIZE];
 
 SESSION:
     /* receive query request from ServerM */
-    rc = recvfrom(*sd, (struct User_auth *)buffer, (sizeof(*buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
-    if (rc <= 0)
+    if (recvfrom(*sd, (struct User_query *)&buffer, (sizeof(buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len) <= 0)
     {
         perror("[ERROR] ServerCS receiving request failed");
         exit(-1);
     }
-    printf("The ServerCS received a request from the Main Server about %s of %s.\n", buffer->category, buffer->course); /* on-screen message */
 
-    /* retrieve course info */
-    retrieveData(*buffer, result);
-
-    /* send query result back to serverM */
-    rc = sendto(*sd, (char *)result, QUERYRESULTSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));
-    if (rc <= 0)
+    /* if in muti mode */
+    if (strcmp("!muti!", buffer.category) == 0)
+        queryMutiProcess(buffer.course, sd, &serverM_address);
+    else
     {
-        perror("[ERROR] ServerCS send feedback failed");
-        exit(-1);
+        printf("The ServerCS received a request from the Main Server about %s of %s.\n", buffer.category, buffer.course); /* on-screen message */
+        /* retrieve course info */
+        retrieveData(buffer, result);
+        /* send query result back to serverM */
+        if (sendto(*sd, (char *)result, QUERYRESULTSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address)) <= 0)
+        {
+            perror("[ERROR] ServerCS send feedback failed");
+            exit(-1);
+        }
+        printf("The ServerCS finished sending the response to the Main Server.\n"); /* on-screen message */
     }
-    printf("The ServerCS finished sending the response to the Main Server.\n"); /* on-screen message */
 
     goto SESSION; /* repeat */
 }
