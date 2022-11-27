@@ -16,6 +16,7 @@ void initServerMUDP(int *sd_udp)
     /* Create serverM socket. */
     *sd_udp = socket(AF_INET, SOCK_DGRAM, 0);
 
+    memset(&serverM_UDP_address, 0, sizeof(serverM_UDP_address));
     serverM_UDP_address.sin_family = AF_INET;
     serverM_UDP_address.sin_port = htons(PORT_NUM_SERVERM_UDP);
     serverM_UDP_address.sin_addr.s_addr = inet_addr(IP_SERVERM);
@@ -42,6 +43,7 @@ void initServerMTCP(int *sd_tcp)
     /* Create serverM socket. */
     *sd_tcp = socket(AF_INET, SOCK_STREAM, 0);
 
+    memset(&serverM_address, 0, sizeof(serverM_address));
     serverM_address.sin_family = AF_INET;
     serverM_address.sin_port = htons(PORT_NUM_SERVERM_TCP);
     serverM_address.sin_addr.s_addr = inet_addr(IP_SERVERM);
@@ -66,6 +68,7 @@ void initServerMTCP(int *sd_tcp)
 void bindServerC(struct sockaddr_in *server_address)
 {
     /* bind with serverC */
+    memset(server_address, 0, sizeof(*server_address));
     server_address->sin_family = AF_INET;
     server_address->sin_port = htons(PORT_NUM_SERVERC_UDP);
     server_address->sin_addr.s_addr = inet_addr(IP_SERVERC);
@@ -81,6 +84,7 @@ void bindServerC(struct sockaddr_in *server_address)
 void bindServerEE(struct sockaddr_in *server_address)
 {
     /* bind with serverEE */
+    memset(server_address, 0, sizeof(*server_address));
     server_address->sin_family = AF_INET;
     server_address->sin_port = htons(PORT_NUM_SERVEREE_UDP);
     server_address->sin_addr.s_addr = inet_addr(IP_SERVEREE);
@@ -96,6 +100,7 @@ void bindServerEE(struct sockaddr_in *server_address)
 void bindServerCS(struct sockaddr_in *server_address)
 {
     /* bind with serverEE */
+    memset(server_address, 0, sizeof(*server_address));
     server_address->sin_family = AF_INET;
     server_address->sin_port = htons(PORT_NUM_SERVERCS_UDP);
     server_address->sin_addr.s_addr = inet_addr(IP_SERVERCS);
@@ -161,14 +166,13 @@ void encryptAuth(char *userAuth)
 void verifyAuth(struct ServerM *serverM_API, struct User_auth *newUser, char *feedback)
 {
     /* UDP: ServerC(my server) info init */
-    int rc;
-    socklen_t serverC_address_len;
-
+    int rc, serverC_address_len;
+    serverC_address_len = sizeof(serverM_API->addr_ServerC);
     /* encrypt auth */
     encryptAuth(newUser->userName);
     encryptAuth(newUser->userPsw);
     /* send auth to serverC */
-    if (sendto(serverM_API->sd_udp, (struct User_auth *)newUser, sizeof(struct User_auth), 0, (struct sockaddr *)&serverM_API->addr_ServerC, sizeof(serverM_API->addr_ServerC)) <= 0)
+    if (sendto(serverM_API->sd_udp, (struct User_auth *)newUser, sizeof(struct User_auth), 0, (struct sockaddr *)&serverM_API->addr_ServerC, serverC_address_len) <= 0)
         perror("[ERROR] UDP user auth request sending is failed");
     printf("The main server sent an authentication request to serverC.\n");
 
@@ -240,13 +244,14 @@ void recvUserQuery(struct ServerM *serverM_API, struct User_query *userQuery)
 void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char *result)
 {
     /* UDP: serverEE and serverCS info init */
-    int rc;
-    socklen_t serverEE_address_len, serverCS_address_len;
+    int rc, serverEE_address_len, serverCS_address_len;
+    serverEE_address_len = sizeof(serverM_API->addr_ServerEE);
+    serverCS_address_len = sizeof(serverM_API->addr_ServerCS);
 
     /* routine the query to corresponding department */
     if (strncmp(query->course, "EE", 2) == 0) /* EE server */
     {
-        if (sendto(serverM_API->sd_udp, (struct User_query *)query, sizeof(struct User_query), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, sizeof(serverM_API->addr_ServerEE)) <= 0)
+        if (sendto(serverM_API->sd_udp, (struct User_query *)query, sizeof(struct User_query), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, serverEE_address_len) <= 0)
             perror("[ERROR] UDP send user query request failed");
         printf("The main server sent a request to serverEE.\n");
         /* recv verification feedback from serverEE */
@@ -258,7 +263,7 @@ void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char 
     }
     else if (strncmp(query->course, "CS", 2) == 0) /* CS server */
     {
-        if (sendto(serverM_API->sd_udp, (struct User_query *)query, sizeof(struct User_query), 0, (struct sockaddr *)&serverM_API->addr_ServerCS, sizeof(serverM_API->addr_ServerCS)) <= 0)
+        if (sendto(serverM_API->sd_udp, (struct User_query *)query, sizeof(struct User_query), 0, (struct sockaddr *)&serverM_API->addr_ServerCS, serverCS_address_len) <= 0)
             perror("[ERROR] UDP send user query request failed");
         printf("The main server sent a request to serverCS.\n");
         /* recv verification feedback from serverCS */

@@ -12,10 +12,10 @@ void initServerC(int *sd)
 {
     struct sockaddr_in serverC_address;
     *sd = socket(AF_INET, SOCK_DGRAM, 0); /* Create serverM socket. */
-
+    memset(&serverC_address, 0, sizeof(serverC_address));
     serverC_address.sin_family = AF_INET;
     serverC_address.sin_port = htons(PORT_NUM_SERVERC_UDP);
-    serverC_address.sin_addr.s_addr = INADDR_ANY;
+    serverC_address.sin_addr.s_addr = inet_addr(IP_SERVERC);
 
     /* Bind ServerC socket and address. */
     if (bind(*sd, (struct sockaddr *)&serverC_address, sizeof(serverC_address)) < 0)
@@ -87,15 +87,16 @@ int validateAuth(struct User_auth auth)
 void commuServerM(int *sd)
 {
     /* ServerM(my client) info init */
-    int rc;
+    int rc, serverM_address_len;
     struct sockaddr_in serverM_address;
-    socklen_t serverM_address_len;
     struct User_auth buffer;
     char feedback[FEEDBACKSIZE];
 
 SESSION:
+    memset(&serverM_address, 0, sizeof(serverM_address));
+    serverM_address_len = sizeof(serverM_address);
     /* receive request from ServerM(my client) */
-    rc = recvfrom(*sd, (struct User_auth *)&buffer, (sizeof(buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
+    rc = recvfrom(*sd, (struct User_auth *)&buffer, sizeof(buffer), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
     if (rc <= 0)
         perror("ServerC recv req failed");
     printf("The ServerC received an authentication request from the Main Server.\n");

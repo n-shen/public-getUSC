@@ -11,7 +11,7 @@ void initServerCS(int *sd)
 {
     struct sockaddr_in serverCS_address;
     *sd = socket(AF_INET, SOCK_DGRAM, 0); /* Create serverM socket. */
-
+    memset(&serverCS_address, 0, sizeof(serverCS_address));
     serverCS_address.sin_family = AF_INET;
     serverCS_address.sin_port = htons(PORT_NUM_SERVERCS_UDP);
     serverCS_address.sin_addr.s_addr = inet_addr(IP_SERVERCS);
@@ -223,13 +223,14 @@ void queryMutiProcess(char *courses, int *sd, struct sockaddr_in *serverM_addres
 void commuServerM(int *sd)
 {
     /* ServerM(my client) info init */
-    int rc;
+    int rc, serverM_address_len;
     struct sockaddr_in serverM_address;
-    socklen_t serverM_address_len;
     struct User_query buffer;
     char result[QUERYRESULTSIZE];
+    serverM_address_len= sizeof(serverM_address);
 
 SESSION:
+    memset(&serverM_address, 0, sizeof(serverM_address));
     /* receive query request from ServerM */
     if (recvfrom(*sd, (struct User_query *)&buffer, (sizeof(buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len) <= 0)
     {
@@ -246,7 +247,7 @@ SESSION:
         /* retrieve course info */
         retrieveData(buffer, result);
         /* send query result back to serverM */
-        if (sendto(*sd, (char *)result, QUERYRESULTSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address)) <= 0)
+        if (sendto(*sd, (char *)result, QUERYRESULTSIZE, 0, (struct sockaddr *)&serverM_address, serverM_address_len) <= 0)
         {
             perror("[ERROR] ServerCS send feedback failed");
             exit(-1);
