@@ -242,8 +242,7 @@ void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char 
 {
     /* UDP: serverEE and serverCS info init */
     int rc;
-    socklen_t serverEE_address_len;
-    socklen_t serverCS_address_len;
+    socklen_t serverEE_address_len, serverCS_address_len;
 
     /* routine the query to corresponding department */
     if (strncmp(query->course, "EE", 2) == 0) /* EE server */
@@ -310,32 +309,59 @@ void queryMutiSplit(struct User_query mutiQuery, struct User_query *queryEE, str
 void queryMutiProcess(struct ServerM *serverM_API, struct User_query *mutiQuery)
 {
     int rc = 0;
+    int idxEE = 0, idxCS = 0, loop = 0;
+    int order[MUTIQUERYSIZE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     struct User_query queryEE, queryCS;
     socklen_t serverEE_address_len, serverCS_address_len;
-    char courseinfosEE[10][COURSEINFOSIZE], courseinfosCS[10][COURSEINFOSIZE];
-    memset(courseinfosEE, 0, sizeof(courseinfosEE[0][0]) * 10 * COURSEINFOSIZE);
-    memset(courseinfosCS, 0, sizeof(courseinfosCS[0][0]) * 10 * COURSEINFOSIZE);
-    int order[11] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2};
+    char courseinfosEE[MUTIQUERYSIZE][COURSEINFOSIZE], courseinfosCS[MUTIQUERYSIZE][COURSEINFOSIZE], courseinfosALL[MUTIQUERYSIZE][COURSEINFOSIZE];
+    memset(courseinfosEE, 0, sizeof(courseinfosEE[0][0]) * MUTIQUERYSIZE * COURSEINFOSIZE);
+    memset(courseinfosCS, 0, sizeof(courseinfosCS[0][0]) * MUTIQUERYSIZE * COURSEINFOSIZE);
+    memset(courseinfosALL, 0, sizeof(courseinfosALL[0][0]) * MUTIQUERYSIZE * COURSEINFOSIZE);
 
     queryMutiSplit(*mutiQuery, &queryEE, &queryCS, order);
-    printf("EE: %s.\n", queryEE.course);    // printing each token
-    printf("EEC: %s.\n", queryEE.category); // printing each token
-    printf("CS: %s.\n", queryCS.course);    // printing each token
-    printf("EEC: %s.\n", queryCS.category); // printing each token
 
     if (strlen(queryEE.course) > 0)
     {
         if (sendto(serverM_API->sd_udp, (struct User_query *)&queryEE, sizeof(struct User_query), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, sizeof(serverM_API->addr_ServerEE)) <= 0)
             perror("[ERROR] UDP send user muti query to serverEE request failed");
-        printf("The main server sent a muti request to serverEE.\n");
 
         rc = recvfrom(serverM_API->sd_udp, (char *)courseinfosEE, 10 * COURSEINFOSIZE, MSG_WAITALL, (struct sockaddr *)&serverM_API->addr_ServerEE, &serverEE_address_len);
         if (rc <= 0)
             perror("[ERROR] ServerM receive muti query result from serverEE failed");
-        printf("The main server received the response from ServerEE using UDP over port %d.\n", PORT_NUM_SERVERM_UDP);
-        for (int loop = 0; loop < 10; loop++)
-            printf("EE_LIST: %s.\n", courseinfosEE[loop]);
     }
+
+    if (strlen(queryCS.course) > 0)
+    {
+        if (sendto(serverM_API->sd_udp, (struct User_query *)&queryCS, sizeof(struct User_query), 0, (struct sockaddr *)&serverM_API->addr_ServerCS, sizeof(serverM_API->addr_ServerCS)) <= 0)
+            perror("[ERROR] UDP send user muti query to serverCS request failed");
+
+        rc = recvfrom(serverM_API->sd_udp, (char *)courseinfosCS, 10 * COURSEINFOSIZE, MSG_WAITALL, (struct sockaddr *)&serverM_API->addr_ServerCS, &serverCS_address_len);
+        if (rc <= 0)
+            perror("[ERROR] ServerM receive muti query result from serverCS failed");
+    }
+
+    for (loop = 0; loop < MUTIQUERYSIZE; loop++)
+    {
+        if (order[loop] == 0)
+            break;
+        else if (order[loop] == 1)
+        {
+            strcpy(courseinfosALL[loop], courseinfosEE[idxEE]);
+            idxEE += 1;
+        }
+        else if (order[loop] == 2)
+        {
+            strcpy(courseinfosALL[loop], courseinfosCS[idxCS]);
+            idxCS += 1;
+        }
+        else if (order[loop] == -1)
+            strcpy(courseinfosALL[loop], "Invalid Department Code!");
+    }
+
+    // for (loop = 0; loop < 10; loop++)
+    //     printf("ALL_LIST: %s.\n", courseinfosALL[loop]);
+    if (write(serverM_API->connected_sd_tcp, courseinfosALL, sizeof(courseinfosALL)) < 0) /* send query result to client via TCP */
+        perror("[ERROR] User muti query result sent failed");
 }
 
 /*

@@ -204,17 +204,12 @@ void queryMutiProcess(char *courses, int *sd, struct sockaddr_in *serverM_addres
         retrieveMultiData(courselist[i], courseinfos[i]); /* retrieve course data and store into courseinfos */
     }
 
-    for (i = 0; i < 10; i++)
-        printf("COURSEINFO: %s.\n", courseinfos[i]);
-
     /* send query result back to serverM */
-    rc = sendto(*sd, (char *)courseinfos, 10 * COURSEINFOSIZE, 0, (struct sockaddr *)serverM_address, sizeof(*serverM_address));
-    if (rc <= 0)
+    if (sendto(*sd, (char *)courseinfos, 10 * COURSEINFOSIZE, 0, (struct sockaddr *)serverM_address, sizeof(*serverM_address)) <= 0)
     {
         perror("[ERROR] ServerEE send feedback failed");
         exit(-1);
     }
-    printf("The ServerEE finished sending the muti response to the Main Server.\n"); /* on-screen message */
 }
 
 /*
@@ -235,8 +230,7 @@ void commuServerM(int *sd)
 
 SESSION:
     /* receive query request from ServerM */
-    rc = recvfrom(*sd, (struct User_query *)&buffer, (sizeof(buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
-    if (rc <= 0)
+    if (recvfrom(*sd, (struct User_query *)&buffer, (sizeof(buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len) <= 0)
     {
         perror("[ERROR] ServerEE receiving request failed");
         exit(-1);
@@ -244,20 +238,14 @@ SESSION:
 
     /* if in muti mode */
     if (strcmp("!muti!", buffer.category) == 0)
-    {
-        printf("The ServerEE get a muti request: %s.\n", buffer.course);
         queryMutiProcess(buffer.course, sd, &serverM_address);
-    }
     else
     {
         printf("The ServerEE received a request from the Main Server about %s of %s.\n", buffer.category, buffer.course); /* on-screen message */
-
         /* retrieve course info */
         retrieveData(buffer, result);
-
         /* send query result back to serverM */
-        rc = sendto(*sd, (char *)result, QUERYRESULTSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));
-        if (rc <= 0)
+        if (sendto(*sd, (char *)result, QUERYRESULTSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address)) <= 0)
         {
             perror("[ERROR] ServerEE send feedback failed");
             exit(-1);

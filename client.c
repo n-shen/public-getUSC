@@ -177,7 +177,10 @@ void userQuery(int *sd, char *userName, int myportnum)
 {
     struct User_query newQuery;
     int mode = 1; /* 1 - single; 0 - multi */
+    int loop = 0;
     char result[QUERYRESULTSIZE];
+    char courseinfosALL[MUTIQUERYSIZE][COURSEINFOSIZE];
+    memset(courseinfosALL, 0, sizeof(courseinfosALL[0][0]) * MUTIQUERYSIZE * COURSEINFOSIZE);
 
     askUserQuery(newQuery.course, 1); /* ask user for coursecode */
     for (int i = 0; newQuery.course[i]; i++)
@@ -227,6 +230,18 @@ void userQuery(int *sd, char *userName, int myportnum)
     else
     {
         printf("%s sent a request with multiple CourseCode to the main server.\n", userName); /* on-screen message */
+        if (read(*sd, &courseinfosALL, sizeof(courseinfosALL)) <= 0)
+        {
+            perror("[ERROR] Muti query result receiving is failed, try to connect server later");
+            exit(-1);
+        }
+        printf("CourseCode: Credits, Professor, Days, Course Name\n");
+        for (loop = 0; loop < MUTIQUERYSIZE; loop++)
+        {
+            if (strlen(courseinfosALL[loop]) == 0)
+                break;
+            printf("%s\n", courseinfosALL[loop]);
+        }
     }
 }
 

@@ -99,7 +99,6 @@ SESSION:
     if (rc <= 0)
         perror("ServerC recv req failed");
     printf("The ServerC received an authentication request from the Main Server.\n");
-    printf("%s, %s\n", buffer.userName, buffer.userPsw);
     sprintf(feedback, "%d", validateAuth(buffer));
 
     /* send auth result back to serverM */

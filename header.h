@@ -15,6 +15,7 @@
 #define COURSEINFOSIZE 640
 #define COURSELISTSIZE 6400
 
+#define MUTIQUERYSIZE 10
 #define AUTHATTEMPTS 3 /* maximum login attempts, must greater than 0 */
 
 #define IP_CLIENT "127.0.0.1"  /* client IP address */
