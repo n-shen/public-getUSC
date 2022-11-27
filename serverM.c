@@ -168,7 +168,8 @@ void verifyAuth(struct ServerM *serverM_API, struct User_auth *newUser, char *fe
     encryptAuth(newUser->userName);
     encryptAuth(newUser->userPsw);
     /* send auth to serverC */
-    if (sendto(serverM_API->sd_udp, (struct User_auth *)newUser, (sizeof(newUser)), 0, (struct sockaddr *)&serverM_API->addr_ServerC, sizeof(serverM_API->addr_ServerC)) <= 0)
+    printf("%s, %s\n", newUser->userName, newUser->userPsw);
+    if (sendto(serverM_API->sd_udp, (struct User_auth *)newUser, sizeof(struct User_auth), 0, (struct sockaddr *)&serverM_API->addr_ServerC, sizeof(serverM_API->addr_ServerC)) <= 0)
         perror("[ERROR] UDP user auth request sending is failed");
     printf("The main server sent an authentication request to serverC.\n");
 
@@ -247,7 +248,7 @@ void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char 
     /* routine the query to corresponding department */
     if (strncmp(query->course, "EE", 2) == 0) /* EE server */
     {
-        if (sendto(serverM_API->sd_udp, (struct User_query *)query, (sizeof(query)), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, sizeof(serverM_API->addr_ServerEE)) <= 0)
+        if (sendto(serverM_API->sd_udp, (struct User_query *)query, sizeof(struct User_query), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, sizeof(serverM_API->addr_ServerEE)) <= 0)
             perror("[ERROR] UDP send user query request failed");
         printf("The main server sent a request to serverEE.\n");
         /* recv verification feedback from serverEE */
@@ -259,7 +260,7 @@ void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char 
     }
     else if (strncmp(query->course, "CS", 2) == 0) /* CS server */
     {
-        if (sendto(serverM_API->sd_udp, (struct User_query *)query, (sizeof(query)), 0, (struct sockaddr *)&serverM_API->addr_ServerCS, sizeof(serverM_API->addr_ServerCS)) <= 0)
+        if (sendto(serverM_API->sd_udp, (struct User_query *)query, sizeof(struct User_query), 0, (struct sockaddr *)&serverM_API->addr_ServerCS, sizeof(serverM_API->addr_ServerCS)) <= 0)
             perror("[ERROR] UDP send user query request failed");
         printf("The main server sent a request to serverCS.\n");
         /* recv verification feedback from serverCS */
@@ -324,7 +325,7 @@ void queryMutiProcess(struct ServerM *serverM_API, struct User_query *mutiQuery)
 
     if (strlen(queryEE.course) > 0)
     {
-        if (sendto(serverM_API->sd_udp, (struct User_query *)&queryEE, (sizeof(queryEE)), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, sizeof(serverM_API->addr_ServerEE)) <= 0)
+        if (sendto(serverM_API->sd_udp, (struct User_query *)&queryEE, sizeof(struct User_query), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, sizeof(serverM_API->addr_ServerEE)) <= 0)
             perror("[ERROR] UDP send user muti query to serverEE request failed");
         printf("The main server sent a muti request to serverEE.\n");
 

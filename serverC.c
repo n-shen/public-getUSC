@@ -90,17 +90,17 @@ void commuServerM(int *sd)
     int rc;
     struct sockaddr_in serverM_address;
     socklen_t serverM_address_len;
-    struct User_auth *buffer = malloc(sizeof(struct User_auth));
+    struct User_auth buffer;
     char feedback[FEEDBACKSIZE];
 
 SESSION:
     /* receive request from ServerM(my client) */
-    rc = recvfrom(*sd, (struct User_auth *)buffer, (sizeof(*buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
+    rc = recvfrom(*sd, (struct User_auth *)&buffer, (sizeof(buffer)), MSG_WAITALL, (struct sockaddr *)&serverM_address, &serverM_address_len);
     if (rc <= 0)
         perror("ServerC recv req failed");
     printf("The ServerC received an authentication request from the Main Server.\n");
-
-    sprintf(feedback, "%d", validateAuth(*buffer));
+    printf("%s, %s\n", buffer.userName, buffer.userPsw);
+    sprintf(feedback, "%d", validateAuth(buffer));
 
     /* send auth result back to serverM */
     rc = sendto(*sd, (char *)feedback, FEEDBACKSIZE, 0, (struct sockaddr *)&serverM_address, sizeof(serverM_address));
