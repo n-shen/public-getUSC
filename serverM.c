@@ -166,7 +166,8 @@ void encryptAuth(char *userAuth)
 void verifyAuth(struct ServerM *serverM_API, struct User_auth *newUser, char *feedback)
 {
     /* UDP: ServerC(my server) info init */
-    int rc, serverC_address_len;
+    int rc;
+    socklen_t serverC_address_len;
     serverC_address_len = sizeof(serverM_API->addr_ServerC);
     /* encrypt auth */
     encryptAuth(newUser->userName);
@@ -244,7 +245,8 @@ void recvUserQuery(struct ServerM *serverM_API, struct User_query *userQuery)
 void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char *result)
 {
     /* UDP: serverEE and serverCS info init */
-    int rc, serverEE_address_len, serverCS_address_len;
+    int rc;
+    socklen_t serverEE_address_len, serverCS_address_len;
     serverEE_address_len = sizeof(serverM_API->addr_ServerEE);
     serverCS_address_len = sizeof(serverM_API->addr_ServerCS);
 

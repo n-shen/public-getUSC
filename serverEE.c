@@ -222,11 +222,12 @@ void queryMutiProcess(char *courses, int *sd, struct sockaddr_in *serverM_addres
 void commuServerM(int *sd)
 {
     /* ServerM(my client) info init */
-    int rc, serverM_address_len;
+    int rc;
+    socklen_t serverM_address_len;
     struct sockaddr_in serverM_address;
     struct User_query buffer;
     char result[QUERYRESULTSIZE];
-    serverM_address_len= sizeof(serverM_address);
+    serverM_address_len = sizeof(serverM_address);
 
 SESSION:
     memset(&serverM_address, 0, sizeof(serverM_address));
