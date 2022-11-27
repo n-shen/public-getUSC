@@ -50,7 +50,7 @@ void retrieveData(struct User_query query, char *result)
         exit(-1);
     }
 
-    /* check username and password */
+    /* look for course info */
     while (fgets(line, sizeof(line), fp) != NULL)
     {
         code = strtok(line, ",");
@@ -117,8 +117,8 @@ void retrieveData(struct User_query query, char *result)
  * ----------------------------
  *   retrieve course lists info from db
  *
- *   query: client query request
- *   *multilist: query result
+ *   token: client query request
+ *   *courseinfo: query result
  */
 void retrieveMultiData(char *token, char *courseinfo)
 {
@@ -135,7 +135,7 @@ void retrieveMultiData(char *token, char *courseinfo)
         printf("[ERROR] ee.txt load failed.\n");
         exit(-1);
     }
-    /* check username and password */
+    /* look for specific course info */
     while (fgets(line, sizeof(line), fp) != NULL)
     {
         code = strtok(line, ","); /* course code */
@@ -171,13 +171,23 @@ void retrieveMultiData(char *token, char *courseinfo)
     fclose(fp); /* close file */
 }
 
+/*
+ * Function: queryMutiProcess
+ * ----------------------------
+ *   Muti mode: process query
+ *
+ *   *courses: a list of course code
+ *   *sd: client TCP socket
+ *  *serverM_address API of serverM
+ */
 void queryMutiProcess(char *courses, int *sd, struct sockaddr_in *serverM_address)
 {
     int i = 0, rc = 0;
-    char courselist[10][QUERYRESULTSIZE], courseinfos[10][COURSEINFOSIZE];
+    char courselist[10][QUERYRESULTSIZE], courseinfos[10][COURSEINFOSIZE]; /* muti courses' codes and infos */
     memset(courselist, 0, sizeof(courselist[0][0]) * 10 * QUERYRESULTSIZE);
     memset(courseinfos, 0, sizeof(courseinfos[0][0]) * 10 * COURSEINFOSIZE);
 
+    /* read query request from serverM */
     char *token = strtok(courses, "&");
     while (token != NULL)
     {
@@ -186,11 +196,12 @@ void queryMutiProcess(char *courses, int *sd, struct sockaddr_in *serverM_addres
         i += 1;
     }
 
+    /* process each query */
     for (i = 0; i < 10; i++)
     {
         if (strlen(courselist[i]) == 0)
             break;
-        retrieveMultiData(courselist[i], courseinfos[i]);
+        retrieveMultiData(courselist[i], courseinfos[i]); /* retrieve course data and store into courseinfos */
     }
 
     for (i = 0; i < 10; i++)
