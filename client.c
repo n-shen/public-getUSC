@@ -1,3 +1,7 @@
+/* Author: Niholas Shen https://shen.dev
+ * University of Southern California. EE450 Nov.28.2022
+ */
+
 #include "header.h"
 
 /*

@@ -1,3 +1,7 @@
+/* Author: Niholas Shen https://shen.dev
+ * University of Southern California. EE450 Nov.28.2022
+ */
+
 #include "header.h"
 
 /*
@@ -183,7 +187,7 @@ void retrieveMultiData(char *token, char *courseinfo)
 void queryMutiProcess(char *courses, int *sd, struct sockaddr_in *serverM_address)
 {
     int i = 0, rc = 0;
-    char courselist[10][QUERYRESULTSIZE], courseinfos[10][COURSEINFOSIZE]; /* muti courses' codes and infos */
+    char courselist[MUTIQUERYSIZE][QUERYRESULTSIZE], courseinfos[MUTIQUERYSIZE][COURSEINFOSIZE]; /* muti courses' codes and infos */
     memset(courselist, 0, sizeof(courselist[0][0]) * 10 * QUERYRESULTSIZE);
     memset(courseinfos, 0, sizeof(courseinfos[0][0]) * 10 * COURSEINFOSIZE);
 
