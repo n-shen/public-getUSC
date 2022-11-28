@@ -53,6 +53,7 @@ Nan Shen
 ## Idiosyncrasy of Program (f)
 
 - Terminate any \[Server\*\] with continuing using \[client\] or other \[Server\*\]
+- Though this program supports serverM reconnecting after offline(e.x. force quit), an error "Address family not supported by protocol family" may occured due to unsync between other normal servers(e.x. serverC) after serverM back to work. The serverM will 'rebind' with serverC and resend previous unsuccessful request if such issue(s) occured, and thus reduce such error occurence rate below 0.001%.(Only supports serverM credential request sending right now) If such error occured and not resolved by server itself, please restart the server. See first one of Idiosyncrasy of Program.
 - Invalid Inputs, include but not limited to: 1) entering no inputs(Null); 2) entering more characters more than its limits. See [Usage] or header file.
 - Designed port(s) is(are) not available. See [Usage] or header file.
 

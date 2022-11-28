@@ -178,8 +178,13 @@ void verifyAuth(struct ServerM *serverM_API, struct User_auth *newUser, char *fe
     encryptAuth(newUser->userName);
     encryptAuth(newUser->userPsw);
     /* send auth to serverC */
-    if (sendto(serverM_API->sd_udp, (struct User_auth *)newUser, sizeof(struct User_auth), 0, (struct sockaddr *)&serverM_API->addr_ServerC, serverC_address_len) <= 0)
-        perror("[ERROR] UDP user auth request sending is failed");
+    rc = sendto(serverM_API->sd_udp, (struct User_auth *)newUser, sizeof(struct User_auth), 0, (struct sockaddr *)&serverM_API->addr_ServerC, serverC_address_len);
+    if (rc <= 0){
+        bindServerC(&serverM_API->addr_ServerC);
+        if (sendto(serverM_API->sd_udp, (struct User_auth *)newUser, sizeof(struct User_auth), 0, (struct sockaddr *)&serverM_API->addr_ServerC, serverC_address_len) <= 0)
+            perror("[ERROR] UDP user auth request sending is failedn may caused by server accident shut down, pls restart");
+    }    
+    
     printf("The main server sent an authentication request to serverC.\n");
 
     /* recv verification feedback from serverC */
