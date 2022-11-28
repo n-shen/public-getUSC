@@ -83,10 +83,10 @@ See cs.txt for example, see serverM.c for how to encrypt passwords.
 
 ## Copytights Notice
 
-If it is necessary or inadvertent to bring this project to the public (e.x. personal project demo), the author adhere followings:\
+If it is necessary or inadvertent to bring this project to the public (e.x. personal project demo), the author adhere followings:
 
-1. Will not share with future students who take EE450 at USC.
-2. Will not allow future students who take EE450 at USC take this project as reference (by noticing in README).
+1. WILL NOT SHARE with future students who take EE450 at USC.
+2. WILL NOT ALLOW future students who take EE450 at USC take this project as reference (by noticing in README).
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
