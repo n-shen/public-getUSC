@@ -122,7 +122,8 @@ void recvUserAuth(struct ServerM *serverM_API, struct User_auth *userAuth)
     if (read(serverM_API->connected_sd_tcp, buffer, ntohs(sizeOfUserAuth)) <= 0) /* read size and buffer */
     {
         printf("\n$------- Clinet disconneted! Waiting new clients... ----------$\n");
-        commuClient(serverM_API); /* wait for new client */
+        close(serverM_API->connected_sd_tcp); /* tear down connection */
+        commuClient(serverM_API);             /* wait for new client */
     }
     memcpy(userAuth, buffer, sizeOfUserAuth); /* save result*/
     free(buffer);
@@ -279,6 +280,16 @@ void retrieveCourse(struct ServerM *serverM_API, struct User_query *query, char 
         strcpy(result, "Didn't find the course!");
 }
 
+/*
+ * Function: queryMutiSplit
+ * ----------------------------
+ *   Split mutiquery requests into EE and CS by order
+ *
+ *   *mutiQuery: muti query list
+ *   *queryEE: EE query list
+ *   *queryCS: CS query list
+ *   *order: query order
+ */
 void queryMutiSplit(struct User_query mutiQuery, struct User_query *queryEE, struct User_query *queryCS, int *order)
 {
     int i = 0;
@@ -312,11 +323,19 @@ void queryMutiSplit(struct User_query mutiQuery, struct User_query *queryEE, str
     strcpy(queryCS->category, "!muti!");
 }
 
+/*
+ * Function: queryMutiProcess
+ * ----------------------------
+ *   Split mutiquery requests into EE and CS by order
+ *
+ *   *serverM_API: serverM API
+ *   *mutiQuery: muti query list
+ */
 void queryMutiProcess(struct ServerM *serverM_API, struct User_query *mutiQuery)
 {
-    int rc = 0;
-    int idxEE = 0, idxCS = 0, loop = 0;
-    int order[MUTIQUERYSIZE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    int rc = 0;                                                /* return code */
+    int idxEE = 0, idxCS = 0, loop = 0;                        /* index */
+    int order[MUTIQUERYSIZE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; /* order */
     struct User_query queryEE, queryCS;
     socklen_t serverEE_address_len, serverCS_address_len;
     char courseinfosEE[MUTIQUERYSIZE][COURSEINFOSIZE], courseinfosCS[MUTIQUERYSIZE][COURSEINFOSIZE], courseinfosALL[MUTIQUERYSIZE][COURSEINFOSIZE];
@@ -324,9 +343,9 @@ void queryMutiProcess(struct ServerM *serverM_API, struct User_query *mutiQuery)
     memset(courseinfosCS, 0, sizeof(courseinfosCS[0][0]) * MUTIQUERYSIZE * COURSEINFOSIZE);
     memset(courseinfosALL, 0, sizeof(courseinfosALL[0][0]) * MUTIQUERYSIZE * COURSEINFOSIZE);
 
-    queryMutiSplit(*mutiQuery, &queryEE, &queryCS, order);
+    queryMutiSplit(*mutiQuery, &queryEE, &queryCS, order); /* split queries to EE and CS */
 
-    if (strlen(queryEE.course) > 0)
+    if (strlen(queryEE.course) > 0) /* process EE queries */
     {
         if (sendto(serverM_API->sd_udp, (struct User_query *)&queryEE, sizeof(struct User_query), 0, (struct sockaddr *)&serverM_API->addr_ServerEE, sizeof(serverM_API->addr_ServerEE)) <= 0)
             perror("[ERROR] UDP send user muti query to serverEE request failed");
@@ -336,7 +355,7 @@ void queryMutiProcess(struct ServerM *serverM_API, struct User_query *mutiQuery)
             perror("[ERROR] ServerM receive muti query result from serverEE failed");
     }
 
-    if (strlen(queryCS.course) > 0)
+    if (strlen(queryCS.course) > 0) /* process CS queries */
     {
         if (sendto(serverM_API->sd_udp, (struct User_query *)&queryCS, sizeof(struct User_query), 0, (struct sockaddr *)&serverM_API->addr_ServerCS, sizeof(serverM_API->addr_ServerCS)) <= 0)
             perror("[ERROR] UDP send user muti query to serverCS request failed");
@@ -346,7 +365,7 @@ void queryMutiProcess(struct ServerM *serverM_API, struct User_query *mutiQuery)
             perror("[ERROR] ServerM receive muti query result from serverCS failed");
     }
 
-    for (loop = 0; loop < MUTIQUERYSIZE; loop++)
+    for (loop = 0; loop < MUTIQUERYSIZE; loop++) /* sort query list to origin */
     {
         if (order[loop] == 0)
             break;
@@ -363,10 +382,7 @@ void queryMutiProcess(struct ServerM *serverM_API, struct User_query *mutiQuery)
         else if (order[loop] == -1)
             strcpy(courseinfosALL[loop], "Invalid Department Code!");
     }
-
-    // for (loop = 0; loop < 10; loop++)
-    //     printf("ALL_LIST: %s.\n", courseinfosALL[loop]);
-    if (write(serverM_API->connected_sd_tcp, courseinfosALL, sizeof(courseinfosALL)) < 0) /* send query result to client via TCP */
+    if (write(serverM_API->connected_sd_tcp, courseinfosALL, sizeof(courseinfosALL)) < 0) /* send query results to client via TCP */
         perror("[ERROR] User muti query result sent failed");
 }
 
@@ -384,7 +400,7 @@ void queryProcess(struct ServerM *serverM_API, char *userName)
     char result[QUERYRESULTSIZE]; /* query result */
 
     recvUserQuery(serverM_API, &newQuery);        /* receive user query request from client */
-    if (strcmp("!muti!", newQuery.category) == 0) /* if in muti mode */
+    if (strcmp("!muti!", newQuery.category) == 0) /* if in muti query mode */
         queryMutiProcess(serverM_API, &newQuery);
     else
     {
