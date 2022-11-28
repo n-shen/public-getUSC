@@ -14,27 +14,41 @@ Nan Shen
 
 ## Completed Assignments' List (c)
 
-- Phase 0
-- Phase 1
-- Phase 2
-- Phase 3
-- Phase 4
+- Phase 0, Phase 1, Phase 2, Phase 3, Phase 4
+
 - Extra Credits
 
 ## Files Structure (d)
 
-- client.c: For user login by entering correct username and password withing 3 attempts and then query any category of a specific course or ask for mutiple course infomation with serverM via TCP.
-- serverM.c: Receive user credentials via TCP and then encrypt those info to verify user's identity from serverC; Receive user query requests and then reply with results retrieved from correct department server(s) via UDP.
-- serverC.c: Receive user credentials from serverM and send feedback to serverM via UDP.
-- serverEE.c: Receive user query requests about EE department from serverM and send query results to serverM via UDP.
-- serverCS.c: Receive user query requests about CS department from serverM and send query results to serverM via UDP.
-- header.h: Header file: import libaries, define constants and data structures.
-- Makefile: Compile or clean executable files: client serverM serverC serverEE serverCS.
-- README.md: This file.
+`client.c:` For user login by entering correct username and password withing 3 attempts and then query any category of a specific course or ask for mutiple course infomation with serverM via TCP.
 
-To make servers run correctly, cred.txt, cs.txt, and ee.txt are needed.
+`serverM.c:` Receive user credentials via TCP and then encrypt those info to verify user's identity from serverC; Receive user query requests and then reply with results retrieved from correct department server(s) via UDP.
+
+`serverC.c:` Receive user credentials from serverM and send feedback to serverM via UDP.
+
+`serverEE.c:` Receive user query requests about EE department from serverM and send query results to serverM via UDP.
+
+`serverCS.c:` Receive user query requests about CS department from serverM and send query results to serverM via UDP.
+
+`header.h:` Header file: import libaries, define constants and data structures.
+
+`Makefile:` Compile or clean executable files: client serverM serverC serverEE serverCS.
+
+`README.md:` This file.
+
+`Others:` To make servers run correctly, cred.txt, cs.txt, and ee.txt are needed.
 
 ## Formats of Messages Exchanged (e)
+
+| Message | Format | Who Use? |
+|---|----|---|
+| ServerM | struct ServerM{ int sd_tcp; int sd_udp; int connected_sd_tcp; struct sockaddr_in addr_ServerC; struct sockaddr_in addr_ServerEE; struct sockaddr_in addr_ServerCS; } | client <-> serverM <-> serverEE and serverCS |
+| User_auth | struct User_auth{ char userName[BUFFSIZE]; char userPsw[BUFFSIZE]; } | client <-> serverM <-> serverC |
+| User_query | struct User_auth{ char course[BUFFSIZECOURSE]; char category[BUFFSIZECOURSE]; } | client <-> serverM <-> serverEE and serverCS |
+| authFeedback/fbcode/code | char authFeedback[FEEDBACKSIZE] ("101": Username does not exist; "102": Password does not match; "103": Authentication is successful) | client <-> serverM <-> serverC |
+| Muti query | struct User_auth{ char course[BUFFSIZECOURSE]; char category == "!muti!"; } | client <-> serverM <-> serverEE and serverCS |
+| Muti query lists | char courselist[MUTIQUERYSIZE][COURSEINFOSIZE]; } | serverM <- serverEE and serverCS |
+| Muti query results | char courseinfos[MUTIQUERYSIZE][COURSEINFOSIZE]; } | client <-> serverM <-> serverEE and serverCS |
 
 ## Idiosyncrasy of Program (f)
 
@@ -48,6 +62,17 @@ N/A
 
 ## Usage
 
-### muti query
+### Log In
 
-Please enter the course code to query: CS100 CS310 CS561 CS356 EE450 CS435 EE658 EE608 EE604 EE520
+[USER NAME] (5-50 characters) `enter`\
+[USER PASSWORD] (5-50 characters)`enter` 
+
+### Query Course Info
+
+[COURSECODE] (1-128 characters) `enter`\
+[CATEGORY] (1-128 characters) `enter`
+
+### Muti query
+
+Please enter the course code to query: (2-10 course codes, followed by a single blank)\
+CS100 CS310 CS561 CS356 EE450 CS435 EE658 EE608 EE604 EE520
