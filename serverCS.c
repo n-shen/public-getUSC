@@ -1,3 +1,7 @@
+/* Author: Niholas Shen https://shen.dev
+ * University of Southern California. EE450 Nov.28.2022
+ */
+
 #include "header.h"
 
 /*
@@ -183,7 +187,7 @@ void retrieveMultiData(char *token, char *courseinfo)
 void queryMutiProcess(char *courses, int *sd, struct sockaddr_in *serverM_address)
 {
     int i = 0, rc = 0;
-    char courselist[10][QUERYRESULTSIZE], courseinfos[10][COURSEINFOSIZE]; /* muti courses' codes and infos */
+    char courselist[MUTIQUERYSIZE][QUERYRESULTSIZE], courseinfos[MUTIQUERYSIZE][COURSEINFOSIZE]; /* muti courses' codes and infos */
     memset(courselist, 0, sizeof(courselist[0][0]) * 10 * QUERYRESULTSIZE);
     memset(courseinfos, 0, sizeof(courseinfos[0][0]) * 10 * COURSEINFOSIZE);
 
@@ -223,11 +227,12 @@ void queryMutiProcess(char *courses, int *sd, struct sockaddr_in *serverM_addres
 void commuServerM(int *sd)
 {
     /* ServerM(my client) info init */
-    int rc, serverM_address_len;
+    int rc;
+    socklen_t serverM_address_len;
     struct sockaddr_in serverM_address;
     struct User_query buffer;
     char result[QUERYRESULTSIZE];
-    serverM_address_len= sizeof(serverM_address);
+    serverM_address_len = sizeof(serverM_address);
 
 SESSION:
     memset(&serverM_address, 0, sizeof(serverM_address));

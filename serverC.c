@@ -1,3 +1,8 @@
+/* Author: Niholas Shen https://shen.dev
+ * University of Southern California. EE450 Nov.28.2022
+ */
+
+
 #include "header.h"
 
 /*
@@ -87,7 +92,8 @@ int validateAuth(struct User_auth auth)
 void commuServerM(int *sd)
 {
     /* ServerM(my client) info init */
-    int rc, serverM_address_len;
+    int rc;
+    socklen_t serverM_address_len;
     struct sockaddr_in serverM_address;
     struct User_auth buffer;
     char feedback[FEEDBACKSIZE];
