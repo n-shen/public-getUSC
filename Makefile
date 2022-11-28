@@ -4,19 +4,19 @@
 all: client serverM serverC serverEE serverCS
 
 client:
-	gcc client.c -o client
+	gcc -o client client.c
 
 serverM:
-	gcc serverM.c -o serverM
+	gcc -o serverM serverM.c
 
 serverC:
-	gcc serverC.c -o serverC
+	gcc -o serverC serverC.c
 
 serverEE:
-	gcc serverEE.c -o serverEE
+	gcc -o serverEE serverEE.c
 
 serverCS:
-	gcc serverCS.c -o serverCS
+	gcc -o serverCS serverCS.c
 
 clean:
 	rm -rf client serverM serverC serverEE serverCS

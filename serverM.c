@@ -236,6 +236,7 @@ void recvUserQuery(struct ServerM *serverM_API, struct User_query *userQuery)
         commuClient(serverM_API); /* wait for new client */
     }
     memcpy(userQuery, buffer, sizeOfUserQuery); /* save result*/
+    free(buffer);
 }
 
 /*
