@@ -59,6 +59,10 @@ N/A
 
 ## Usage
 
+### Set Up
+In terminal, type `make`.\
+Run: `./serverM`, `./serverC`, `./serverEE`, `./serverCS`, `./client`.
+
 ### Log In
 
 [USER NAME] (5-50 characters) `enter`\
