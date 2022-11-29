@@ -4,21 +4,17 @@
 
 A course registration system for USC students to view their future course of study by using UNIX socket.
 
-## Developer/Author Name (a)
 
-Nan Shen
+## Important Notice for FUTURE STUDENTS OF EE450 IN USC
+YOU ARE NOT ALLOWED to take this project as a reference or look at any files under this directory.\
+Please be aware that this project is recorded in Turnitin, and taking any code to your submission, will result in academic misconduct.\
+The author of this project will NOT be responsible for any consequence.
 
-## Student ID (b)
+## Developer/Author Name
 
-1905334448
+Nicholas Shen
 
-## Completed Assignments' List (c)
-
-- Phase 0, Phase 1, Phase 2, Phase 3, Phase 4
-
-- Extra Credits
-
-## Files Structure (d)
+## Files Structure
 
 `client.c:` For user login by entering correct username and password withing 3 attempts and then query any category of a specific course or ask for mutiple course infomation with serverM via TCP.
 
@@ -38,7 +34,7 @@ Nan Shen
 
 `Others:` To make servers run correctly, cred.txt, cs.txt, and ee.txt are needed.
 
-## Formats of Messages Exchanged (e)
+## Formats of Messages Exchanged
 
 | Message                  | Format                                                                                                                                                               | Who Use?                                     |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
